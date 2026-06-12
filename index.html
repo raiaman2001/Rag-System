@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 RAG Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-3d-grid"></div>
+
+    <div class="dashboard-layout">
+
+        <aside class="sidebar glass-panel">
+            <div class="brand">
+                <i class="fa-solid fa-robot neon-icon pulse-anim"></i>
+                <div>
+                    <h2>RAG Command Center</h2>
+                    <p>AI-Powered Document Intelligence</p>
+                </div>
+            </div>
+
+            <div class="upload-zone" id="upload-zone">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <p>Drag & Drop files or <span id="browse-btn">Browse</span></p>
+                <div class="support-text">Supports: PDF, CSV, TXT, Excel</div>
+            </div>
+
+            <div class="doc-status glass-card">
+                <h3><i class="fa-solid fa-file-pdf"></i> Active Document</h3>
+                <ul>
+                    <li>
+                        <span>File</span>
+                        <span class="highlight" id="doc-file">NA</span>
+                    </li>
+                    <li>
+                        <span>Pages</span>
+                        <span id="doc-pages">NA</span>
+                    </li>
+                    <li>
+                        <span>Chunks</span>
+                        <span id="doc-chunks">NA</span>
+                    </li>
+                    <li>
+                        <span>Model</span>
+                        <span id="doc-model">NA</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="pipeline-status">
+                <h3>System Status</h3>
+                <div class="status-item">
+                    <div class="dot" id="embedding-dot"></div>
+                    <span id="embedding-status">Waiting...</span>
+                </div>
+                <div class="status-item">
+                    <div class="dot" id="vector-dot"></div>
+                    <span id="vector-status">Not Connected</span>
+                </div>
+                <div class="status-item">
+                    <div class="dot" id="retriever-dot"></div>
+                    <span id="retriever-status">Inactive</span>
+                </div>
+                <div class="status-item">
+                    <div class="dot" id="gemini-dot"></div>
+                    <span id="gemini-status">Offline</span>
+                </div>
+            </div>
+
+            <div class="sidebar-actions">
+                <button class="btn btn-primary" onclick="clearChat()"><i class="fa-solid fa-plus"></i> New Chat</button>
+                <button class="btn btn-outline" id="rebuild-btn"><i class="fa-solid fa-database"></i> Rebuild Vector
+                    DB</button>
+                <button class="btn btn-outline" id="export-btn"><i class="fa-solid fa-download"></i> Export
+                    Chat</button>
+
+                <button class="btn btn-outline" id="theme-toggle">
+                    <i class="fa-solid fa-sun"></i> <span>Light Mode</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="chat-center glass-panel" id="vanta-bg">
+            <div class="chat-content-wrapper">
+                <header class="chat-header">
+                    <h1 class="gradient-text">Ask Anything From Your Documents</h1>
+                    <p>Advanced AI Retrieval-Augmented Generation</p>
+                </header>
+
+                <div class="chat-window" id="chat-window">
+                    <div class="message ai-message">
+                        <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                        <div class="msg-content">Systems online. Please upload a document to begin.<span class="timestamp">Just now</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <div class="floating-input glass-card">
+                        <button class="icon-btn" id="attach-btn"><i class="fa-solid fa-paperclip"></i></button>
+                        <input type="text" id="chat-input" placeholder="Ask questions about your uploaded documents..."
+                            autocomplete="off">
+                        <button class="icon-btn"><i class="fa-solid fa-microphone"></i></button>
+                        <button class="send-btn" id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <aside class="right-panel">
+
+            <div class="glass-panel pipeline-visualizer">
+                <h3><i class="fa-solid fa-microchip"></i> Live RAG Pipeline</h3>
+                <div class="rag-steps">
+                    <div class="rag-step" id="step-1"><i class="fa-solid fa-keyboard"></i> Question Input</div>
+                    <div class="rag-step" id="step-2"><i class="fa-solid fa-wave-square"></i> Embedding Search</div>
+                    <div class="rag-step" id="step-3"><i class="fa-solid fa-layer-group"></i> Chunk Retrieval</div>
+                    <div class="rag-step" id="step-4"><i class="fa-solid fa-bullseye"></i> Similarity Matching</div>
+                    <div class="rag-step" id="step-5"><i class="fa-solid fa-brain"></i> LLM Synthesis</div>
+                </div>
+
+                <div class="retrieval-results hidden" id="retrieval-results">
+                    <div class="confidence-wrapper">
+                        <div class="circular-chart">
+                            <div class="circular-chart-inner">94%</div>
+                        </div>
+                        <div class="conf-text">Confidence<br>Score</div>
+                    </div>
+
+                    <h4><i class="fa-solid fa-file-lines"></i> Retrieved Sources</h4>
+                    <div class="tags">
+                        <span class="tag">Page 12</span>
+                        <span class="tag">Page 45</span>
+                        <span class="tag">Page 48</span>
+                    </div>
+
+                    <h4><i class="fa-solid fa-quote-right"></i> Top Match Chunk</h4>
+                    <div class="chunk-card">
+                        <div class="chunk-score">0.89 Similarity</div>
+                        "...revenue grew by 24% in Q3, heavily driven by the integration of the new AI-driven analytics
+                        architecture scaling across enterprise clients..."
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel analytics-dashboard">
+                <h3><i class="fa-solid fa-chart-line"></i> Analytics & Insights</h3>
+
+                <div class="stats-grid">
+                    <div class="stat-box glass-card">
+                        <span class="stat-value neon-text" id="stat-queries">0</span>
+                        <span class="stat-label">Total Queries</span>
+                    </div>
+                    <div class="stat-box glass-card">
+                        <span class="stat-value neon-text" id="stat-response">0.0s</span>
+                        <span class="stat-label">Avg Response</span>
+                    </div>
+                    <div class="stat-box glass-card">
+                        <span class="stat-value neon-text" id="stat-dimensions">1536</span>
+                        <span class="stat-label">Dimensions</span>
+                    </div>
+                    <div class="stat-box glass-card">
+                        <span class="stat-value neon-text" id="stat-accuracy">100%</span>
+                        <span class="stat-label">Accuracy</span>
+                    </div>
+                </div>
+
+                <div class="chart-container glass-card mt-3">
+                    <h4>Chunk Distribution</h4>
+                    <div class="bar-chart" id="chunk-bars">
+                        <div class="bar" style="height: 40%;"></div>
+                        <div class="bar" style="height: 70%;"></div>
+                        <div class="bar" style="height: 100%;"></div>
+                        <div class="bar" style="height: 60%;"></div>
+                        <div class="bar" style="height: 80%;"></div>
+                        <div class="bar" style="height: 30%;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+    </div>
+
+    <input type="file" id="hidden-file-input" style="display: none;" accept=".pdf,.csv,.txt,.xlsx,.xls">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+
+    <div id="upload-modal" class="upload-modal hidden">
+        <div class="upload-card">
+            <h2>Uploading Document</h2>
+            <p id="upload-status">Preparing upload...</p>
+            <div class="progress-wrapper">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="progress-text" id="progress-text">0%</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
