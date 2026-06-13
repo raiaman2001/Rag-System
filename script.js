@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", "http://127.0.0.1:5000/upload");
+            xhr.open("POST", "/upload");
 
             xhr.upload.addEventListener("progress", (e) => {
                 if (e.lengthComputable) {
@@ -295,7 +295,7 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => { if (steps[3]) steps[3].classList.add('active'); }, 1500); // Similarity Match
 
             // Call Backend
-            const response = await fetch("http://127.0.0.1:5000/chat", {
+            const response = await fetch("/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: text })
