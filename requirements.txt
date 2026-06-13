@@ -6,7 +6,7 @@ langchain-google-genai==1.0.10
 google-generativeai==0.7.2
 google-ai-generativelanguage==0.6.6
 
-faiss-cpu==1.8.0
+faiss-cpu
 PyMuPDF==1.24.9
 pypdf==4.3.1
 
