@@ -36,7 +36,7 @@ print("Total chunks:", len(chunks))
 
 # ================= CREATE EMBEDDINGS =================
 embedding_model = GoogleGenerativeAIEmbeddings(
-    model="models/text-embedding-04"
+    model="models/gemini-embedding-001"
 )
 
 # ================= CREATE VECTOR DATABASE =================

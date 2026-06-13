@@ -35,7 +35,7 @@ os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 print("Loading AI Models...")
 
 embedding_model = GoogleGenerativeAIEmbeddings(
-    model="models/text-embedding-04"
+    model="models/gemini-embedding-001"
 )
 
 
