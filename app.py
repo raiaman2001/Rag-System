@@ -8,10 +8,8 @@
 
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-# from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenAIEmbeddings
 from langchain.chains import RetrievalQA
 import os
 from dotenv import load_dotenv
@@ -37,8 +35,8 @@ chunks = text_splitter.split_documents(pdf_docs)
 print("Total chunks:", len(chunks))
 
 # ================= CREATE EMBEDDINGS =================
-embedding_model = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
+embedding_model = GoogleGenAIEmbeddings(
+    model="models/text-embedding-04"
 )
 
 # ================= CREATE VECTOR DATABASE =================

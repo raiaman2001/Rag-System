@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
@@ -12,8 +13,7 @@ from langchain_community.document_loaders import (
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenAIEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
@@ -34,9 +34,10 @@ os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 # ================= INITIALIZE MODELS =================
 print("Loading AI Models...")
 
-embedding_model = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
+embedding_model = GoogleGenAIEmbeddings(
+    model="models/text-embedding-04"
 )
+
 
 # gemini-3.1-flash-lite is used since other model quotas are exhausted.
 llm = ChatGoogleGenerativeAI(
