@@ -13,7 +13,7 @@ from langchain_community.document_loaders import (
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
@@ -34,7 +34,7 @@ os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 # ================= INITIALIZE MODELS =================
 print("Loading AI Models...")
 
-embedding_model = GoogleGenAIEmbeddings(
+embedding_model = GoogleGenerativeAIEmbeddings(
     model="models/text-embedding-04"
 )
 

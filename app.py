@@ -9,7 +9,7 @@
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain.chains import RetrievalQA
 import os
 from dotenv import load_dotenv
@@ -35,7 +35,7 @@ chunks = text_splitter.split_documents(pdf_docs)
 print("Total chunks:", len(chunks))
 
 # ================= CREATE EMBEDDINGS =================
-embedding_model = GoogleGenAIEmbeddings(
+embedding_model = GoogleGenerativeAIEmbeddings(
     model="models/text-embedding-04"
 )
 
