@@ -1,3 +1,8 @@
+// Set this to your Render backend URL before deploying to Vercel.
+// Example: const BACKEND_URL = 'https://your-app-name.onrender.com';
+// If testing locally, keep it as empty string '' or 'http://127.0.0.1:5000'
+const BACKEND_URL = 'https://rag-system-ptp9.onrender.com';
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // ==========================================
@@ -114,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", "/upload");
+            xhr.open("POST", `${BACKEND_URL}/upload`);
 
             xhr.upload.addEventListener("progress", (e) => {
                 if (e.lengthComputable) {
@@ -295,7 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => { if (steps[3]) steps[3].classList.add('active'); }, 1500); // Similarity Match
 
             // Call Backend
-            const response = await fetch("/chat", {
+            const response = await fetch(`${BACKEND_URL}/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: text })
