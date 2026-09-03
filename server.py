@@ -1,4 +1,3 @@
-# pyrefly: ignore [missing-import]
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
@@ -13,7 +12,8 @@ from langchain_community.document_loaders import (
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 
@@ -34,10 +34,9 @@ os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 # ================= INITIALIZE MODELS =================
 print("Loading AI Models...")
 
-embedding_model = GoogleGenerativeAIEmbeddings(
-    model="models/gemini-embedding-001"
+embedding_model = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
-
 
 # gemini-3.1-flash-lite is used since other model quotas are exhausted.
 llm = ChatGoogleGenerativeAI(
@@ -49,21 +48,15 @@ llm = ChatGoogleGenerativeAI(
 rag_chain = None
 vector_db = None
 
-# ================= STRICT RAG PROMPT =================
+# ================= CONVERSATIONAL RAG PROMPT =================
 prompt_template = """
-Format the answer in a clean structured card layout.
+You are a helpful and intelligent assistant. Use the provided context to answer the user's question in a smooth, conversational, and natural way.
 
 Rules:
-1. Divide different topics/sections/items using the line separator: ━━━━━━━━━━━━━━
-2. Group the answer into logical sections/cards (e.g. 🎓 Education Summary, 💼 Work Experience, etc.) with a clear emoji and section title.
-3. For details of an item (like a degree, role, or qualification), use clean emojis on new lines:
-   - 📌 for the Title/Degree/Role/Topic
-   - 🏫 or 🏢 for the Institution/Organization
-   - 📍 for the Location
-   - 📅 for the Date/Duration
-4. Do NOT group details on the same line with asterisks. Put each detail on its own new line.
-5. Answer ONLY from context. If the answer is not found, reply exactly with:
-"I could not find this information in the uploaded document."
+1. Understand the user's question and synthesize the context to provide a clear, easy-to-read, and well-structured answer.
+2. Do NOT just copy-paste raw text. Rephrase and explain the information beautifully like a human expert would.
+3. If the answer is not in the context, politely and conversationally let the user know that you don't have that specific detail right now. Do NOT use words like "AI", "LLM", "context", or "uploaded document". Act entirely like a helpful human.
+4. CRITICAL: Do NOT use asterisks (*) anywhere in your response (neither for bullet points nor bolding). If you need bullet points, use plain dashes (-) or elegant emojis. Keep the answer format clean, warm, and conversational.
 
 Context:
 {context}
@@ -86,37 +79,155 @@ def load_documents(file_path):
     if extension == ".pdf":
         loader = PyMuPDFLoader(file_path)
         docs = loader.load()
+        docs.insert(0, Document(page_content=f"Document Summary: This PDF file contains exactly {len(docs)} pages.", metadata={"page": "Summary"}))
 
     elif extension == ".txt":
         loader = TextLoader(file_path, encoding="utf-8")
         docs = loader.load()
+        docs.insert(0, Document(page_content=f"Document Summary: This is a text file.", metadata={"page": "Summary"}))
 
-    elif extension == ".csv":
-        loader = CSVLoader(file_path=file_path)
-        docs = loader.load()
-
-    elif extension in [".xlsx", ".xls"]:
-        # sheet_name=None karne se ye Excel ki SAARI sheets read kar lega
-        dfs = pd.read_excel(file_path, sheet_name=None)
+    elif extension in [".xlsx", ".xls", ".csv"]:
+        if extension == ".csv":
+            dfs = {"Sheet1": pd.read_csv(file_path)}
+        else:
+            dfs = pd.read_excel(file_path, sheet_name=None)
+            
         docs = []
+        total_rows = 0
+        total_missing = 0
+        total_cells = 0
+        total_dupes = 0
+        schema_set = set()
+        issues_found = []
+        
+        email_errors = 0
+        date_errors = 0
+        outlier_errors = 0
         
         for sheet_name, df in dfs.items():
-            # Khaali cells (NaN) ko empty string se replace karein taaki AI confuse na ho
-            df = df.fillna("")
+            total_rows += len(df)
             
-            for index, row in df.iterrows():
-                # Sirf unhi columns ka data lein jisme kuch value ho
-                row_data = [f"{col}: {row[col]}" for col in df.columns if str(row[col]).strip() != ""]
+            # Replace empty strings and whitespace with NA for accurate missing count
+            df_cleaned = df.replace(r'^\s*$', pd.NA, regex=True)
+            
+            # Identify primary ID column (fallback to first column)
+            id_col = next((c for c in df_cleaned.columns if 'id' in str(c).lower()), df_cleaned.columns[0])
+            
+            # Strip whitespace from string columns for accurate duplicate detection
+            for col in df_cleaned.columns:
+                if df_cleaned[col].dtype == 'object':
+                    df_cleaned[col] = df_cleaned[col].apply(lambda x: str(x).strip() if pd.notna(x) else x)
+            
+            # Keep track of duplicate row indices to prevent double counting
+            dupe_indices = set(df_cleaned[df_cleaned.duplicated()].index)
+            
+            total_missing += int(df_cleaned.isna().sum().sum())
+            total_cells += int(df_cleaned.size)
+            
+            # Identify exact missing values
+            for col in df_cleaned.columns:
+                missing_mask = df_cleaned[col].isna()
+                if missing_mask.any():
+                    missing_ids = df_cleaned.loc[missing_mask, id_col].dropna().astype(str).tolist()
+                    for m_id in missing_ids:
+                        issues_found.append({"type": "Missing", "column": col, "id": m_id})
+            
+            # Identify exact duplicate IDs/Emails intelligently using cardinality (uniqueness ratio)
+            for c in df_cleaned.columns:
+                cl = str(c).lower()
+                if 'id' in cl or 'email' in cl:
+                    valid_data = df_cleaned[c].dropna()
+                    if len(valid_data) > 0:
+                        unique_ratio = valid_data.nunique() / len(valid_data)
+                        
+                        if unique_ratio > 0.8:
+                            # Add these duplicate indices to our set
+                            col_dupes = df_cleaned.loc[valid_data.index][df_cleaned.loc[valid_data.index].duplicated(subset=[c])].index
+                            dupe_indices.update(col_dupes)
+                            
+                            dupes_mask = df_cleaned.loc[valid_data.index].duplicated(subset=[c], keep=False)
+                            if dupes_mask.any():
+                                dupe_vals = df_cleaned.loc[valid_data.index][dupes_mask][c].astype(str).tolist()
+                                for d_val in dupe_vals:
+                                    issues_found.append({"type": "Duplicate", "column": c, "id": d_val})
+                                    
+            # --- Advanced Validations ---
+            # 1. Email Validation
+            for c in df_cleaned.columns:
+                if 'email' in str(c).lower():
+                    valid_data = df_cleaned[c].dropna().astype(str)
+                    if len(valid_data) > 0:
+                        invalid_emails = valid_data[~valid_data.str.contains(r'^[\w\.-]+@[\w\.-]+\.\w+$', regex=True)]
+                        if len(invalid_emails) > 0:
+                            email_errors += len(invalid_emails)
+                            for d_val in invalid_emails.tolist()[:5]:
+                                issues_found.append({"type": "Invalid Email", "column": c, "id": d_val})
+
+            # 2. Date Validation
+            for c in df_cleaned.columns:
+                if 'date' in str(c).lower():
+                    valid_data = df_cleaned[c].dropna()
+                    if len(valid_data) > 0:
+                        parsed_dates = pd.to_datetime(valid_data, errors='coerce')
+                        invalid_dates = valid_data[parsed_dates.isna()]
+                        if len(invalid_dates) > 0:
+                            date_errors += len(invalid_dates)
+                            for d_val in invalid_dates.astype(str).tolist()[:5]:
+                                issues_found.append({"type": "Invalid Date", "column": c, "id": d_val})
+                                
+            # 3. Numeric Outliers (using IQR)
+            num_cols = df_cleaned.select_dtypes(include=['number']).columns
+            for c in num_cols:
+                cl = str(c).lower()
+                if not any(skip in cl for skip in ['id', 'phone', 'zip', 'year']):
+                    valid_data = df_cleaned[c].dropna()
+                    if len(valid_data) > 3:
+                        Q1 = valid_data.quantile(0.25)
+                        Q3 = valid_data.quantile(0.75)
+                        IQR = Q3 - Q1
+                        if IQR > 0:
+                            outliers = valid_data[(valid_data < (Q1 - 1.5 * IQR)) | (valid_data > (Q3 + 1.5 * IQR))]
+                            if len(outliers) > 0:
+                                outlier_errors += len(outliers)
+                                for d_val in outliers.astype(str).tolist()[:5]:
+                                    issues_found.append({"type": "Outlier", "column": c, "id": d_val})
+            # --- End Advanced Validations ---
+                                    
+            total_dupes += len(dupe_indices)
+                
+            schema_set.update(df_cleaned.columns.tolist())
+
+            df_filled = df.fillna("")
+            
+            for index, row in df_filled.iterrows():
+                row_data = [f"{col}: {row[col]}" for col in df_filled.columns if str(row[col]).strip() != ""]
                 
                 if row_data:
-                    # AI ke padhne ke liye ek clean sentence banayein
                     content = f"[Sheet: {sheet_name}] " + " | ".join(row_data)
-                    
-                    # Metadata me Sheet Name aur Row Number daal dein
                     docs.append(Document(
                         page_content=content, 
                         metadata={"page": f"{sheet_name} - Row {index + 1}"}
                     ))
+        
+        # Save globally for upload response
+        global advanced_excel_stats
+        advanced_excel_stats = {
+            "rows": total_rows,
+            "cols": len(schema_set),
+            "missing": total_missing,
+            "dupes": total_dupes,
+            "schema": list(schema_set)[:5],
+            "issues": issues_found,
+            "validations": {
+                "emails": email_errors,
+                "dates": date_errors,
+                "outliers": outlier_errors
+            }
+        }
+
+        # Inject global dataset summary for RAG
+        summary = f"Dataset Summary: This workbook contains {len(dfs)} sheet(s). The total number of rows across all sheets is exactly {total_rows}. Schema: {', '.join(list(schema_set)[:10])}."
+        docs.insert(0, Document(page_content=summary, metadata={"page": "Summary"}))
     else:
         raise ValueError("Unsupported file format")
 
@@ -186,7 +297,7 @@ def upload_file():
         retriever = vector_db.as_retriever(
             search_type="similarity",
             search_kwargs={
-                "k": 5
+                "k": 15
             }
         )
 
@@ -201,15 +312,28 @@ def upload_file():
             }
         )
 
+        extra_stats = {}
+        if file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
+            global advanced_excel_stats
+            try:
+                extra_stats = advanced_excel_stats
+            except NameError:
+                extra_stats = {'rows': len(docs), 'cols': 'Auto', 'missing': 0, 'dupes': 0, 'schema': []}
+        elif file.filename.lower().endswith('.txt'):
+            text = " ".join([d.page_content for d in docs])
+            words = len(text.split())
+            extra_stats['words'] = words
+            extra_stats['readtime'] = f"{max(1, words // 200)} min"
+
         return jsonify({
-            "message":
-            f"{file.filename} uploaded successfully!",
+            "message": "File processed successfully",
             "file_name": file.filename,
             "pages": len(docs),
             "chunks": len(chunks),
             "model": "all-MiniLM-L6-v2",
-            "dimensions": 384
-        })
+            "dimensions": "384",
+            "extra_stats": extra_stats
+        }), 200
 
     except Exception as e:
         print("Upload Error:", e)
@@ -253,10 +377,10 @@ def chat():
 
             if "page" in doc.metadata:
                 page = doc.metadata["page"]
-
-                sources.append(
-                    f"Page {int(page)+1}"
-                )
+                if isinstance(page, int) or (isinstance(page, str) and page.isdigit()):
+                    sources.append(f"Page {int(page)+1}")
+                else:
+                    sources.append(str(page))
 
             elif "row" in doc.metadata:
                 row = doc.metadata["row"]

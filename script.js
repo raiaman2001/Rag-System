@@ -1,33 +1,9 @@
-// Set this to your Render backend URL before deploying to Vercel.
-// Example: const BACKEND_URL = 'https://your-app-name.onrender.com';
-// If testing locally, keep it as empty string '' or 'http://127.0.0.1:5000'
-const BACKEND_URL = 'https://rag-system-ptp9.onrender.com';
-
 document.addEventListener("DOMContentLoaded", () => {
 
     // ==========================================
-    // 1. VANTA + THEME
+    // 1. THEME
     // ==========================================
     const isLight = localStorage.getItem("theme") === "light";
-    let vantaEffect;
-
-    if (typeof VANTA !== "undefined") {
-        vantaEffect = VANTA.NET({
-            el: "#vanta-bg",
-            mouseControls: true,
-            touchControls: true,
-            gyroControls: false,
-            minHeight: 200,
-            minWidth: 200,
-            scale: 1,
-            scaleMobile: 1,
-            color: isLight ? 0x0284c7 : 0x00E5FF,
-            backgroundColor: isLight ? 0xE5E7EB : 0x05050A,
-            points: 12,
-            maxDistance: 22,
-            spacing: 18
-        });
-    }
 
     const themeToggleBtn = document.getElementById("theme-toggle");
     const themeIcon = themeToggleBtn?.querySelector("i");
@@ -47,16 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
             themeIcon?.classList.replace("fa-sun", "fa-moon");
             if (themeText) themeText.textContent = "Dark Mode";
             localStorage.setItem("theme", "light");
-            if (vantaEffect) {
-                vantaEffect.setOptions({ color: 0x0ea5e9, backgroundColor: 0xE5E7EB });
-            }
         } else {
             themeIcon?.classList.replace("fa-moon", "fa-sun");
             if (themeText) themeText.textContent = "Light Mode";
             localStorage.setItem("theme", "dark");
-            if (vantaEffect) {
-                vantaEffect.setOptions({ color: 0x00E5FF, backgroundColor: 0x05050A });
-            }
         }
     });
 
@@ -70,12 +40,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const triggerFileSelect = (e) => {
         if (e) e.stopPropagation();
-        fileInput?.click();
+        if (fileInput) {
+            fileInput.click();
+        }
     };
 
     uploadZone?.addEventListener("click", triggerFileSelect);
     browseBtn?.addEventListener("click", triggerFileSelect);
     attachBtn?.addEventListener("click", triggerFileSelect);
+
+    const chatHistories = {
+        pdf: `<div class="message ai-message"><div class="avatar"><i class="fa-solid fa-robot"></i></div><div class="msg-content">Systems online. Please upload a PDF document to begin.<span class="timestamp">Just now</span></div></div>`,
+        excel: `<div class="message ai-message"><div class="avatar"><i class="fa-solid fa-robot"></i></div><div class="msg-content">Systems online. Please upload an Excel/CSV document to begin.<span class="timestamp">Just now</span></div></div>`
+    };
+    let currentTab = "pdf";
+
+    const switchDashboard = (type, acceptTypes) => {
+        const chatWin = document.getElementById("chat-window");
+        if (chatWin) chatHistories[currentTab] = chatWin.innerHTML;
+
+        document.querySelectorAll(".btn-type").forEach(btn => btn.classList.remove("active"));
+        document.getElementById(`btn-${type}`)?.classList.add("active");
+
+        document.querySelectorAll(".dashboard-view").forEach(view => view.classList.add("hidden"));
+        document.getElementById(`dashboard-${type}`)?.classList.remove("hidden");
+        
+        if (fileInput) fileInput.accept = acceptTypes;
+
+        currentTab = type;
+        if (chatWin) {
+            chatWin.innerHTML = chatHistories[type];
+            chatWin.scrollTop = chatWin.scrollHeight;
+        }
+    };
+
+    document.getElementById("btn-pdf")?.addEventListener("click", () => switchDashboard("pdf", ".pdf"));
+    document.getElementById("btn-excel")?.addEventListener("click", () => switchDashboard("excel", ".xlsx,.xls,.csv"));
 
     fileInput?.addEventListener("change", async (event) => {
         const file = event.target.files[0];
@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const xhr = new XMLHttpRequest();
-            xhr.open("POST", `${BACKEND_URL}/upload`);
+            xhr.open("POST", "http://127.0.0.1:5000/upload");
 
             xhr.upload.addEventListener("progress", (e) => {
                 if (e.lengthComputable) {
@@ -190,6 +190,144 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     const statDims = document.getElementById('stat-dimensions');
                     if (statDims) statDims.textContent = data.dimensions || "3072";
+
+                    if (data.extra_stats) {
+                        // Process Advanced Validations
+                        if (data.extra_stats.validations) {
+                            const vEmails = document.getElementById("val-emails");
+                            const vDates = document.getElementById("val-dates");
+                            const vNumeric = document.getElementById("val-numeric");
+                            
+                            if (vEmails) {
+                                if (data.extra_stats.validations.emails > 0) {
+                                    vEmails.className = "validation-item error";
+                                    vEmails.querySelector(".val-text").textContent = `Emails: ${data.extra_stats.validations.emails} invalid`;
+                                } else {
+                                    vEmails.className = "validation-item success";
+                                    vEmails.querySelector(".val-text").textContent = "Emails: 100% Valid";
+                                }
+                            }
+                            
+                            if (vDates) {
+                                if (data.extra_stats.validations.dates > 0) {
+                                    vDates.className = "validation-item error";
+                                    vDates.querySelector(".val-text").textContent = `Dates: ${data.extra_stats.validations.dates} invalid format`;
+                                } else {
+                                    vDates.className = "validation-item success";
+                                    vDates.querySelector(".val-text").textContent = "Dates: Formats standard";
+                                }
+                            }
+                            
+                            if (vNumeric) {
+                                if (data.extra_stats.validations.outliers > 0) {
+                                    vNumeric.className = "validation-item error";
+                                    vNumeric.querySelector(".val-text").textContent = `Outliers: ${data.extra_stats.validations.outliers} detected`;
+                                } else {
+                                    vNumeric.className = "validation-item success";
+                                    vNumeric.querySelector(".val-text").textContent = "Outliers: None detected";
+                                }
+                            }
+                        }
+
+                        if (data.extra_stats.rows !== undefined) {
+                            const rowEl = document.getElementById("excel-rows");
+                            if (rowEl) rowEl.textContent = data.extra_stats.rows.toLocaleString();
+                        }
+                        if (data.extra_stats.cols !== undefined) {
+                            const colEl = document.getElementById("excel-cols");
+                            if (colEl) colEl.textContent = data.extra_stats.cols;
+                        }
+                        if (data.extra_stats.missing !== undefined) {
+                            const missEl = document.getElementById("excel-missing");
+                            if (missEl) missEl.textContent = data.extra_stats.missing;
+                        }
+                        if (data.extra_stats.dupes !== undefined) {
+                            const dupeEl = document.getElementById("excel-dupes");
+                            if (dupeEl) dupeEl.textContent = data.extra_stats.dupes.toLocaleString();
+                        }
+                        if (data.extra_stats.schema !== undefined) {
+                            const schemaEl = document.getElementById("insight-schema");
+                            if (schemaEl) schemaEl.textContent = data.extra_stats.schema.join(", ") + "...";
+                        }
+                        
+                        // Populate issues tables
+                        const issuesTbody = document.getElementById("issues-table-body");
+                        const issuesContainer = document.getElementById("issues-container");
+                        let valTbody = document.querySelector("#validation-table tbody");
+                        let valWrapper = document.getElementById("validation-table-wrapper");
+                        
+                        // Fix for aggressive browser caching: Dynamically create the table if missing from DOM
+                        if (!valWrapper) {
+                            const validationList = document.querySelector(".validation-list");
+                            if (validationList) {
+                                valWrapper = document.createElement("div");
+                                valWrapper.className = "table-scroll-wrapper";
+                                valWrapper.id = "validation-table-wrapper";
+                                valWrapper.style.display = "none";
+                                valWrapper.style.marginTop = "1rem";
+                                valWrapper.innerHTML = `
+                                    <table class="issues-table" id="validation-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Error Type</th>
+                                                <th>Column</th>
+                                                <th>Invalid Value</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                `;
+                                validationList.insertAdjacentElement("afterend", valWrapper);
+                                valTbody = valWrapper.querySelector("tbody");
+                            }
+                        }
+                        
+                        if (issuesTbody) issuesTbody.innerHTML = "";
+                        if (valTbody) valTbody.innerHTML = "";
+                        
+                        let hasBasicIssues = false;
+                        let hasValidationErrors = false;
+                        
+                        if (data.extra_stats.issues && data.extra_stats.issues.length > 0) {
+                            data.extra_stats.issues.forEach(issue => {
+                                const tr = document.createElement("tr");
+                                const badgeClass = issue.type.toLowerCase().includes("missing") ? "missing" : 
+                                                 issue.type.toLowerCase().includes("duplicate") ? "duplicate" : 
+                                                 issue.type.toLowerCase().includes("outlier") ? "outlier" : "invalid";
+                                
+                                tr.innerHTML = `
+                                    <td><span class="issue-badge ${badgeClass}">${issue.type}</span></td>
+                                    <td>${issue.column}</td>
+                                    <td>${issue.id}</td>
+                                `;
+                                
+                                if (issue.type.includes("Missing") || issue.type.includes("Duplicate")) {
+                                    if (issuesTbody) issuesTbody.appendChild(tr);
+                                    hasBasicIssues = true;
+                                } else {
+                                    if (valTbody) valTbody.appendChild(tr);
+                                    hasValidationErrors = true;
+                                }
+                            });
+                        }
+                        
+                        if (issuesContainer) {
+                            if (hasBasicIssues) {
+                                issuesContainer.classList.remove("hidden");
+                            } else {
+                                issuesContainer.classList.add("hidden");
+                            }
+                        }
+                        
+                        if (valWrapper) {
+                            valWrapper.style.display = hasValidationErrors ? "block" : "none";
+                        }
+                        
+                        const highlights = document.getElementById("insight-highlights");
+                        if (highlights) highlights.textContent = `The dataset contains ${data.extra_stats.rows} total records across ${data.extra_stats.cols} detected columns.`;
+
+
+                    }
 
                     addMessage(`File "<b>${file.name}</b>" uploaded successfully! System is ready.`, false);
 
@@ -300,7 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => { if (steps[3]) steps[3].classList.add('active'); }, 1500); // Similarity Match
 
             // Call Backend
-            const response = await fetch(`${BACKEND_URL}/chat`, {
+            const response = await fetch("http://127.0.0.1:5000/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: text })
@@ -333,9 +471,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Format Answer
             let answer = data.answer || "No response found";
-            if (data.sources && data.sources.length) {
-                answer += `<br><br>📄 Sources: ${data.sources.join(", ")}`;
-            }
+            // if (data.sources && data.sources.length) {
+            //     answer += `<br><br>📄 Sources: ${data.sources.join(", ")}`;
+            // }
 
             addMessage(answer);
 

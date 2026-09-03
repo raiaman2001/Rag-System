@@ -11,13 +11,9 @@
 </head>
 
 <body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-    <div class="bg-3d-grid"></div>
-
     <div class="dashboard-layout">
 
-        <aside class="sidebar glass-panel">
+        <aside class="sidebar glass-panel" data-tilt data-tilt-max="2" data-tilt-speed="400" data-tilt-perspective="1000">
             <div class="brand">
                 <i class="fa-solid fa-robot neon-icon pulse-anim"></i>
                 <div>
@@ -29,7 +25,13 @@
             <div class="upload-zone" id="upload-zone">
                 <i class="fa-solid fa-cloud-arrow-up"></i>
                 <p>Drag & Drop files or <span id="browse-btn">Browse</span></p>
-                <div class="support-text">Supports: PDF, CSV, TXT, Excel</div>
+                <div class="support-text">Supports: PDF, CSV, Excel</div>
+            </div>
+
+            <div class="upload-type-btns">
+                <button class="btn-type active" id="btn-pdf"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                <button class="btn-type" id="btn-excel"><i class="fa-solid fa-file-excel"></i> Excel/CSV</button>
+
             </div>
 
             <div class="doc-status glass-card">
@@ -87,7 +89,7 @@
             </div>
         </aside>
 
-        <main class="chat-center glass-panel" id="vanta-bg">
+        <main class="chat-center glass-panel">
             <div class="chat-content-wrapper">
                 <header class="chat-header">
                     <h1 class="gradient-text">Ask Anything From Your Documents</h1>
@@ -113,84 +115,173 @@
             </div>
         </main>
 
+        <!-- Right Panel - Multiple Dashboards -->
         <aside class="right-panel">
-
-            <div class="glass-panel pipeline-visualizer">
-                <h3><i class="fa-solid fa-microchip"></i> Live RAG Pipeline</h3>
-                <div class="rag-steps">
-                    <div class="rag-step" id="step-1"><i class="fa-solid fa-keyboard"></i> Question Input</div>
-                    <div class="rag-step" id="step-2"><i class="fa-solid fa-wave-square"></i> Embedding Search</div>
-                    <div class="rag-step" id="step-3"><i class="fa-solid fa-layer-group"></i> Chunk Retrieval</div>
-                    <div class="rag-step" id="step-4"><i class="fa-solid fa-bullseye"></i> Similarity Matching</div>
-                    <div class="rag-step" id="step-5"><i class="fa-solid fa-brain"></i> LLM Synthesis</div>
-                </div>
-
-                <div class="retrieval-results hidden" id="retrieval-results">
-                    <div class="confidence-wrapper">
-                        <div class="circular-chart">
-                            <div class="circular-chart-inner">94%</div>
+            
+            <!-- 1. PDF Dashboard (Default) -->
+            <div id="dashboard-pdf" class="dashboard-view active">
+                <div class="glass-panel pipeline-visualizer">
+                    <h3><i class="fa-solid fa-microchip"></i> Live RAG Pipeline</h3>
+                    <div class="rag-steps">
+                        <div class="rag-step" id="step-1"><i class="fa-solid fa-keyboard"></i> Question Input</div>
+                        <div class="rag-step" id="step-2"><i class="fa-solid fa-wave-square"></i> Embedding Search</div>
+                        <div class="rag-step" id="step-3"><i class="fa-solid fa-layer-group"></i> Chunk Retrieval</div>
+                        <div class="rag-step" id="step-4"><i class="fa-solid fa-bullseye"></i> Similarity Matching</div>
+                        <div class="rag-step" id="step-5"><i class="fa-solid fa-brain"></i> LLM Synthesis</div>
+                    </div>
+                    
+                    <div class="retrieval-results hidden" id="retrieval-results">
+                        <div class="confidence-wrapper">
+                            <div class="circular-chart">
+                                <div class="circular-chart-inner">94%</div>
+                            </div>
+                            <div class="conf-text">Confidence<br>Score</div>
                         </div>
-                        <div class="conf-text">Confidence<br>Score</div>
+                        <h4><i class="fa-solid fa-file-lines"></i> Retrieved Sources</h4>
+                        <div class="tags">
+                            <span class="tag">Page 12</span>
+                            <span class="tag">Page 45</span>
+                            <span class="tag">Page 48</span>
+                        </div>
+                        <h4><i class="fa-solid fa-quote-right"></i> Top Match Chunk</h4>
+                        <div class="chunk-card">
+                            <div class="chunk-score">0.89 Similarity</div>
+                            "...revenue grew by 24% in Q3, heavily driven by the integration of the new AI-driven analytics architecture scaling across enterprise clients..."
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="glass-panel analytics-dashboard">
+                    <h3><i class="fa-solid fa-chart-line"></i> Analytics & Insights</h3>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-box glass-card">
+                            <span class="stat-value text-primary" id="stat-queries">0</span>
+                            <span class="stat-label">Total Queries</span>
+                        </div>
+                        <div class="stat-box glass-card">
+                            <span class="stat-value text-primary" id="stat-response">0.0s</span>
+                            <span class="stat-label">Avg Response</span>
+                        </div>
+                        <div class="stat-box glass-card">
+                            <span class="stat-value text-primary" id="stat-dimensions">1536</span>
+                            <span class="stat-label">Dimensions</span>
+                        </div>
+                        <div class="stat-box glass-card">
+                            <span class="stat-value text-primary" id="stat-accuracy">100%</span>
+                            <span class="stat-label">Accuracy</span>
+                        </div>
+                    </div>
+                </div>            </div>
+
+            <!-- 2. Excel/CSV Dashboard (Advanced Agent) -->
+            <div id="dashboard-excel" class="dashboard-view hidden">
+                <div class="glass-panel pipeline-visualizer">
+                    <h3><i class="fa-solid fa-microscope"></i> Data Profiling</h3>
+                    <div class="stats-grid" style="margin-top: 1rem;">
+                        <div class="stat-box glass-card">
+                            <span class="stat-value text-primary" id="excel-rows">0</span>
+                            <span class="stat-label">Total Rows</span>
+                        </div>
+                        <div class="stat-box glass-card">
+                            <span class="stat-value text-primary" id="excel-cols">0</span>
+                            <span class="stat-label">Columns</span>
+                        </div>
+                        <div class="stat-box glass-card">
+                            <span class="stat-value text-warning" id="excel-missing">0</span>
+                            <span class="stat-label">Missing Values</span>
+                        </div>
+                        <div class="stat-box glass-card">
+                            <span class="stat-value text-danger" id="excel-dupes">0</span>
+                            <span class="stat-label">Duplicate Rows</span>
+                        </div>
+                    </div>
+                    
+                    <div class="issues-table-container mt-3 hidden" id="issues-container">
+                        <h4 style="margin-top: 1.5rem;"><i class="fa-solid fa-triangle-exclamation"></i> Identified Issues</h4>
+                        <div class="table-scroll-wrapper">
+                            <table class="issues-table">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Column</th>
+                                        <th>ID / Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="issues-table-body">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin-top: 1.5rem;"><i class="fa-solid fa-shield-halved"></i> Data Quality Validation</h4>
+                        <div class="validation-list" style="margin-top: 1rem;">
+                            <div class="validation-item" id="val-emails">
+                                <i class="fa-solid fa-envelope"></i>
+                                <div class="val-text">Checking Emails...</div>
+                            </div>
+                            <div class="validation-item" id="val-dates">
+                                <i class="fa-solid fa-calendar-days"></i>
+                                <div class="val-text">Checking Dates...</div>
+                            </div>
+                            <div class="validation-item" id="val-numeric">
+                                <i class="fa-solid fa-hashtag"></i>
+                                <div class="val-text">Checking Numeric Outliers...</div>
+                            </div>
+                        </div>
+
+                        <div class="table-scroll-wrapper" id="validation-table-wrapper" style="display: none; margin-top: 1rem;">
+                            <table class="issues-table" id="validation-table">
+                                <thead>
+                                    <tr>
+                                        <th>Error Type</th>
+                                        <th>Column</th>
+                                        <th>Invalid Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
-                    <h4><i class="fa-solid fa-file-lines"></i> Retrieved Sources</h4>
-                    <div class="tags">
-                        <span class="tag">Page 12</span>
-                        <span class="tag">Page 45</span>
-                        <span class="tag">Page 48</span>
+                <div class="glass-panel analytics-dashboard">
+                    <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Automatic Insights</h3>
+                    
+                    <div class="insights-container mt-3">
+                        <div class="insight-card">
+                            <div class="insight-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                            <div class="insight-content">
+                                <h5>Semantic Schema Detected</h5>
+                                <p id="insight-schema">Awaiting upload...</p>
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-icon"><i class="fa-solid fa-ranking-star"></i></div>
+                            <div class="insight-content">
+                                <h5>Key Highlights</h5>
+                                <p id="insight-highlights">Upload a dataset to generate pandas-powered insights.</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <h4><i class="fa-solid fa-quote-right"></i> Top Match Chunk</h4>
-                    <div class="chunk-card">
-                        <div class="chunk-score">0.89 Similarity</div>
-                        "...revenue grew by 24% in Q3, heavily driven by the integration of the new AI-driven analytics
-                        architecture scaling across enterprise clients..."
+                    <div class="chart-container glass-card mt-3" style="text-align: center; padding: 2rem 1rem;">
+                        <i class="fa-solid fa-chart-column" style="font-size: 2rem; color: var(--border);"></i>
+                        <h4 style="margin-top: 1rem; color: var(--text-muted);">Visualization Engine Ready</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Ask to generate a chart (e.g. "Create salary chart")</p>
                     </div>
                 </div>
             </div>
 
-            <div class="glass-panel analytics-dashboard">
-                <h3><i class="fa-solid fa-chart-line"></i> Analytics & Insights</h3>
 
-                <div class="stats-grid">
-                    <div class="stat-box glass-card">
-                        <span class="stat-value neon-text" id="stat-queries">0</span>
-                        <span class="stat-label">Total Queries</span>
-                    </div>
-                    <div class="stat-box glass-card">
-                        <span class="stat-value neon-text" id="stat-response">0.0s</span>
-                        <span class="stat-label">Avg Response</span>
-                    </div>
-                    <div class="stat-box glass-card">
-                        <span class="stat-value neon-text" id="stat-dimensions">1536</span>
-                        <span class="stat-label">Dimensions</span>
-                    </div>
-                    <div class="stat-box glass-card">
-                        <span class="stat-value neon-text" id="stat-accuracy">100%</span>
-                        <span class="stat-label">Accuracy</span>
-                    </div>
-                </div>
-
-                <div class="chart-container glass-card mt-3">
-                    <h4>Chunk Distribution</h4>
-                    <div class="bar-chart" id="chunk-bars">
-                        <div class="bar" style="height: 40%;"></div>
-                        <div class="bar" style="height: 70%;"></div>
-                        <div class="bar" style="height: 100%;"></div>
-                        <div class="bar" style="height: 60%;"></div>
-                        <div class="bar" style="height: 80%;"></div>
-                        <div class="bar" style="height: 30%;"></div>
-                    </div>
-                </div>
-            </div>
 
         </aside>
     </div>
 
-    <input type="file" id="hidden-file-input" style="display: none;" accept=".pdf,.csv,.txt,.xlsx,.xls">
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    <input type="file" id="hidden-file-input" style="display: none;" accept=".pdf,.csv,.xlsx,.xls">
 
     <div id="upload-modal" class="upload-modal hidden">
         <div class="upload-card">
@@ -203,7 +294,7 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=2.0"></script>
 
 </body>
 
