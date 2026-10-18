@@ -1,13 +1,13 @@
-# 🧠 CORTEX RAG — Intelligent Multi-Model & Multi-Lingual Document AI
+# 🧠 RAG SYSTEM — Intelligent Multi-Model & Multi-Lingual Document AI
 
-![Cortex RAG Banner](https://img.shields.io/badge/Status-Production%20Ready-emerald?style=for-the-badge)
+![RAG System Banner](https://img.shields.io/badge/Status-Production%20Ready-emerald?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-3.0.3-black?style=for-the-badge&logo=flask&logoColor=white)
 ![LangChain](https://img.shields.io/badge/LangChain-Orchestrated-green?style=for-the-badge)
 ![FAISS](https://img.shields.io/badge/Vector_DB-FAISS-purple?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)
 
-> **CORTEX RAG** is a modern, enterprise-ready Retrieval-Augmented Generation (RAG) platform. It empowers users to upload complex documents (PDFs, TXT, Excel, and CSV), intelligently parses and indexes them into high-dimensional vector representations, and enables real-time grounded question answering across **multiple AI providers** (Google Gemini, OpenAI ChatGPT, Local Offline Llama 3.2) in **10+ languages** with instant one-tap Text-to-Speech (TTS).
+> **RAG SYSTEM** is a modern, enterprise-ready Retrieval-Augmented Generation (RAG) platform. It empowers users to upload complex documents (PDFs, TXT, Excel, and CSV), intelligently parses and indexes them into high-dimensional vector representations, and enables real-time grounded question answering across **multiple AI providers** (Google Gemini, OpenAI ChatGPT, Local Offline Llama 3.2) in **10+ languages** with instant one-tap Text-to-Speech (TTS).
 
 ---
 

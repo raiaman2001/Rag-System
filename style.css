@@ -1,5 +1,5 @@
 /* ==========================================
-   Cortex AI ChatBot — Dribbble UX/UI Theme
+   RAG AI ChatBot — Dribbble UX/UI Theme
    Author Design: Kyrylo Soliar (SOLAR Digital)
    ========================================== */
 
@@ -11,11 +11,11 @@
     --sidebar-border: #ececf1;
     
     /* Primary Violet / Lavender Palette */
-    --cortex-purple: #7c3aed;
-    --cortex-purple-hover: #6d28d9;
-    --cortex-purple-light: #ede9fe;
-    --cortex-purple-glow: rgba(124, 58, 237, 0.25);
-    --cortex-purple-border: #ddd6fe;
+    --rag-purple: #7c3aed;
+    --rag-purple-hover: #6d28d9;
+    --rag-purple-light: #ede9fe;
+    --rag-purple-glow: rgba(124, 58, 237, 0.25);
+    --rag-purple-border: #ddd6fe;
 
     /* Slate & Text Colors */
     --dark-pill: #121826;
@@ -50,9 +50,9 @@ body.dark-mode {
     --sidebar-bg: #0f0e18;
     --sidebar-border: #232135;
     
-    --cortex-purple: #9061f9;
-    --cortex-purple-light: rgba(144, 97, 249, 0.16);
-    --cortex-purple-border: rgba(144, 97, 249, 0.35);
+    --rag-purple: #9061f9;
+    --rag-purple-light: rgba(144, 97, 249, 0.16);
+    --rag-purple-border: rgba(144, 97, 249, 0.35);
 
     --dark-pill: #ffffff;
     --text-primary: #f8fafc;
@@ -104,13 +104,13 @@ body {
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--cortex-purple-border);
+    background: var(--rag-purple-border);
 }
 
 /* ==========================================
    Main App Floating Window
    ========================================== */
-.cortex-app {
+.rag-app {
     width: 100%;
     max-width: 1440px;
     height: 100%;
@@ -126,14 +126,14 @@ body {
     transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cortex-app.sidebar-collapsed {
+.rag-app.sidebar-collapsed {
     grid-template-columns: 0px 1fr auto;
 }
 
 /* ==========================================
    1. Left Sidebar
    ========================================== */
-.cortex-sidebar {
+.rag-sidebar {
     background: var(--sidebar-bg);
     border-right: 1px solid var(--sidebar-border);
     display: flex;
@@ -147,7 +147,7 @@ body {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cortex-app.sidebar-collapsed .cortex-sidebar {
+.rag-app.sidebar-collapsed .rag-sidebar {
     width: 0;
     padding: 1.25rem 0;
     opacity: 0;
@@ -161,7 +161,7 @@ body {
     justify-content: space-between;
 }
 
-.cortex-brand {
+.rag-brand {
     display: flex;
     align-items: center;
     gap: 0.65rem;
@@ -171,13 +171,13 @@ body {
     width: 32px;
     height: 32px;
     border-radius: 9px;
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.95rem;
-    border: 1px solid var(--cortex-purple-border);
+    border: 1px solid var(--rag-purple-border);
 }
 
 .brand-text {
@@ -197,10 +197,10 @@ body {
     font-size: 0.65rem;
     font-weight: 700;
     padding: 1px 6px;
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
     border-radius: 12px;
-    border: 1px solid var(--cortex-purple-border);
+    border: 1px solid var(--rag-purple-border);
 }
 
 .icon-toggle-btn {
@@ -248,7 +248,7 @@ body.dark-mode .new-chat-btn {
 }
 
 /* Search Bar */
-.cortex-search-box {
+.rag-search-box {
     background: var(--card-surface);
     border: 1px solid var(--sidebar-border);
     border-radius: 10px;
@@ -261,11 +261,11 @@ body.dark-mode .new-chat-btn {
     transition: border-color 0.15s;
 }
 
-.cortex-search-box:focus-within {
-    border-color: var(--cortex-purple);
+.rag-search-box:focus-within {
+    border-color: var(--rag-purple);
 }
 
-.cortex-search-box input {
+.rag-search-box input {
     background: transparent;
     border: none;
     outline: none;
@@ -285,7 +285,7 @@ body.dark-mode .new-chat-btn {
 }
 
 /* Nav Items */
-.cortex-nav-list {
+.rag-nav-list {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -316,7 +316,7 @@ body.dark-mode .new-chat-btn {
 }
 
 .nav-item.active i {
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
 }
 
 .nav-count {
@@ -341,23 +341,23 @@ body.dark-mode .new-chat-btn {
 }
 
 .upload-zone {
-    border: 1.5px dashed var(--cortex-purple-border);
+    border: 1.5px dashed var(--rag-purple-border);
     border-radius: 8px;
     padding: 0.65rem 0.5rem;
     text-align: center;
-    background: var(--cortex-purple-light);
+    background: var(--rag-purple-light);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .upload-zone:hover {
-    border-color: var(--cortex-purple);
+    border-color: var(--rag-purple);
     transform: translateY(-1px);
 }
 
 .upload-zone i {
     font-size: 1.15rem;
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
     margin-bottom: 0.2rem;
     display: block;
 }
@@ -369,7 +369,7 @@ body.dark-mode .new-chat-btn {
 }
 
 .upload-zone span {
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
     text-decoration: underline;
 }
 
@@ -406,7 +406,7 @@ body.dark-mode .new-chat-btn {
 
 .btn-type.active {
     background: var(--card-surface);
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
     box-shadow: var(--shadow-pill);
 }
 
@@ -541,7 +541,7 @@ body.dark-mode .new-chat-btn {
 
 .history-item.active {
     background: var(--card-surface);
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
     font-weight: 600;
 }
 
@@ -638,7 +638,7 @@ body.dark-mode .new-chat-btn {
 /* ==========================================
    2. Center Chat Workspace
    ========================================== */
-.cortex-main {
+.rag-main {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -648,7 +648,7 @@ body.dark-mode .new-chat-btn {
 }
 
 /* Topbar */
-.cortex-topbar {
+.rag-topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -667,9 +667,9 @@ body.dark-mode .new-chat-btn {
     align-items: center;
     gap: 0.45rem;
     padding: 0.38rem 0.95rem;
-    background: var(--cortex-purple-light);
-    border: 1px solid var(--cortex-purple-border);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    border: 1px solid var(--rag-purple-border);
+    color: var(--rag-purple);
     font-size: 0.825rem;
     font-weight: 700;
     font-family: inherit;
@@ -682,7 +682,7 @@ body.dark-mode .new-chat-btn {
 .model-selector-pill:hover,
 .model-selector-pill.open {
     background: #e0d9fc;
-    border-color: var(--cortex-purple);
+    border-color: var(--rag-purple);
     box-shadow: 0 2px 8px rgba(107, 70, 193, 0.15);
 }
 
@@ -765,7 +765,7 @@ body.dark-mode .new-chat-btn {
 }
 
 .model-option.active {
-    background: var(--cortex-purple-light);
+    background: var(--rag-purple-light);
 }
 
 .model-opt-icon {
@@ -855,7 +855,7 @@ body.dark-mode .badge-tag {
 
 .model-option .checkmark {
     font-size: 0.75rem;
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
     opacity: 0;
     transition: opacity 0.15s;
     margin-left: 4px;
@@ -924,7 +924,7 @@ body.dark-mode .topbar-pill-btn.accent {
 }
 
 /* Workspace Body */
-.cortex-workspace-body {
+.rag-workspace-body {
     flex: 1;
     overflow-y: auto;
     padding: 1.5rem 2.5rem 1rem;
@@ -994,7 +994,7 @@ body.dark-mode .topbar-pill-btn.accent {
 }
 
 /* Chat Stream */
-.cortex-chat-stream {
+.rag-chat-stream {
     width: 100%;
     max-width: 820px;
     flex: 1;
@@ -1037,9 +1037,9 @@ body.dark-mode .topbar-pill-btn.accent {
 }
 
 .ai-message .avatar {
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
-    border: 1px solid var(--cortex-purple-border);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
+    border: 1px solid var(--rag-purple-border);
 }
 
 .msg-content {
@@ -1067,7 +1067,7 @@ body.dark-mode .topbar-pill-btn.accent {
 }
 
 body.dark-mode .user-message .msg-content {
-    background: var(--cortex-purple);
+    background: var(--rag-purple);
 }
 
 .msg-footer {
@@ -1099,8 +1099,8 @@ body.dark-mode .msg-footer {
 }
 
 .speak-btn:hover {
-    color: var(--cortex-purple);
-    background: var(--cortex-purple-light);
+    color: var(--rag-purple);
+    background: var(--rag-purple-light);
 }
 
 .speak-btn.speaking {
@@ -1129,7 +1129,7 @@ body.dark-mode .msg-footer {
 /* ==========================================
    Signature Floating Prompt Box (From Dribbble)
    ========================================== */
-.cortex-prompt-card {
+.rag-prompt-card {
     width: 100%;
     max-width: 820px;
     background: var(--card-surface);
@@ -1143,9 +1143,9 @@ body.dark-mode .msg-footer {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cortex-prompt-card:focus-within {
-    border-color: var(--cortex-purple);
-    box-shadow: 0 0 0 3px var(--cortex-purple-light), var(--shadow-prompt);
+.rag-prompt-card:focus-within {
+    border-color: var(--rag-purple);
+    box-shadow: 0 0 0 3px var(--rag-purple-light), var(--shadow-prompt);
 }
 
 .prompt-card-top {
@@ -1162,9 +1162,9 @@ body.dark-mode .msg-footer {
     border-radius: 16px;
     font-size: 0.75rem;
     font-weight: 700;
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
-    border: 1px solid var(--cortex-purple-border);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
+    border: 1px solid var(--rag-purple-border);
 }
 
 .prompt-tools {
@@ -1197,9 +1197,9 @@ body.dark-mode .msg-footer {
     width: 30px;
     height: 30px;
     border-radius: 50%;
-    background: var(--cortex-purple-light);
-    border: 1px solid var(--cortex-purple-border);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    border: 1px solid var(--rag-purple-border);
+    color: var(--rag-purple);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1274,7 +1274,7 @@ body.dark-mode .msg-footer {
 }
 
 body.dark-mode .send-action-btn {
-    background: var(--cortex-purple);
+    background: var(--rag-purple);
 }
 
 .send-action-btn:hover {
@@ -1302,7 +1302,7 @@ body.dark-mode .send-action-btn {
 }
 
 .saved-prompts-btn:hover {
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
 }
 
 .attach-chip-btn {
@@ -1321,9 +1321,9 @@ body.dark-mode .send-action-btn {
 }
 
 .attach-chip-btn:hover {
-    border-color: var(--cortex-purple-border);
-    color: var(--cortex-purple);
-    background: var(--cortex-purple-light);
+    border-color: var(--rag-purple-border);
+    color: var(--rag-purple);
+    background: var(--rag-purple-light);
 }
 
 /* 3 Suggestion Cards Grid */
@@ -1351,7 +1351,7 @@ body.dark-mode .send-action-btn {
 
 .sugg-card:hover {
     transform: translateY(-2px);
-    border-color: var(--cortex-purple-border);
+    border-color: var(--rag-purple-border);
     box-shadow: 0 8px 24px -4px rgba(124, 58, 237, 0.12);
 }
 
@@ -1374,7 +1374,7 @@ body.dark-mode .send-action-btn {
 }
 
 /* Footer Bar */
-.cortex-footer {
+.rag-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1463,13 +1463,13 @@ body.dark-mode .send-action-btn {
 }
 
 .lang-option.active {
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
 }
 
 .lang-check {
     font-size: 0.75rem;
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
     opacity: 0;
 }
 
@@ -1525,7 +1525,7 @@ body.dark-mode .send-action-btn {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
     font-size: 1.1rem;
 }
 
@@ -1570,8 +1570,8 @@ body.dark-mode .send-action-btn {
     width: 34px;
     height: 34px;
     border-radius: 10px;
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1593,8 +1593,8 @@ body.dark-mode .send-action-btn {
 }
 
 .help-text code {
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
     padding: 1px 5px;
     border-radius: 4px;
     font-size: 0.75rem;
@@ -1606,7 +1606,7 @@ body.dark-mode .send-action-btn {
 }
 
 .footer-center-text a {
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
     text-decoration: underline;
     font-weight: 600;
 }
@@ -1614,7 +1614,7 @@ body.dark-mode .send-action-btn {
 /* ==========================================
    3. Right Panel (RAG Pipeline & Data Profiling)
    ========================================== */
-.cortex-right-panel {
+.rag-right-panel {
     width: 320px;
     background: var(--sidebar-bg);
     border-left: 1px solid var(--sidebar-border);
@@ -1625,7 +1625,7 @@ body.dark-mode .send-action-btn {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cortex-right-panel.collapsed {
+.rag-right-panel.collapsed {
     width: 0;
     padding: 0;
     border-left: none;
@@ -1723,10 +1723,10 @@ body.dark-mode .send-action-btn {
 }
 
 .rag-step.active i {
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
-    border-color: var(--cortex-purple);
-    box-shadow: 0 0 0 3px var(--cortex-purple-glow);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
+    border-color: var(--rag-purple);
+    box-shadow: 0 0 0 3px var(--rag-purple-glow);
 }
 
 .retrieval-results {
@@ -1746,7 +1746,7 @@ body.dark-mode .send-action-btn {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: conic-gradient(var(--cortex-purple) 0% 94%, var(--sidebar-border) 94% 100%);
+    background: conic-gradient(var(--rag-purple) 0% 94%, var(--sidebar-border) 94% 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1762,7 +1762,7 @@ body.dark-mode .send-action-btn {
     justify-content: center;
     font-size: 0.75rem;
     font-weight: 700;
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
 }
 
 .conf-text {
@@ -1803,7 +1803,7 @@ body.dark-mode .send-action-btn {
 .chunk-card {
     background: var(--card-surface);
     border: 1px solid var(--sidebar-border);
-    border-left: 3px solid var(--cortex-purple);
+    border-left: 3px solid var(--rag-purple);
     border-radius: 8px;
     padding: 0.75rem;
     font-size: 0.75rem;
@@ -1814,7 +1814,7 @@ body.dark-mode .send-action-btn {
 .chunk-score {
     font-size: 0.68rem;
     font-weight: 700;
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
     margin-bottom: 0.25rem;
 }
 
@@ -1870,8 +1870,8 @@ body.dark-mode .send-action-btn {
     width: 28px;
     height: 28px;
     border-radius: 7px;
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2003,7 +2003,7 @@ body.dark-mode .send-action-btn {
 
 .progress-bar {
     height: 100%;
-    background: var(--cortex-purple);
+    background: var(--rag-purple);
     width: 0%;
     transition: width 0.3s ease;
 }
@@ -2019,7 +2019,7 @@ body.dark-mode .send-action-btn {
 }
 
 /* Toast Notification */
-.cortex-toast {
+.rag-toast {
     position: fixed;
     bottom: 24px;
     right: 24px;
@@ -2042,24 +2042,24 @@ body.dark-mode .send-action-btn {
     pointer-events: none;
 }
 
-.cortex-toast i {
+.rag-toast i {
     color: #4ade80;
     font-size: 1rem;
 }
 
-.cortex-toast.show {
+.rag-toast.show {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
 }
 
-body.dark-mode .cortex-toast {
+body.dark-mode .rag-toast {
     background: #ffffff;
     color: #0f172a;
     border-color: rgba(0, 0, 0, 0.1);
 }
 
-body.dark-mode .cortex-toast i {
+body.dark-mode .rag-toast i {
     color: #16a34a;
 }
 
@@ -2111,7 +2111,7 @@ body.dark-mode .cortex-toast i {
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    color: var(--cortex-purple);
+    color: var(--rag-purple);
 }
 
 .library-title h3 {
@@ -2124,8 +2124,8 @@ body.dark-mode .cortex-toast i {
     font-size: 0.7rem;
     font-weight: 700;
     padding: 2px 8px;
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
     border-radius: 12px;
 }
 
@@ -2212,14 +2212,14 @@ body.dark-mode .cortex-toast i {
 }
 
 .library-card-item:hover {
-    border-color: var(--cortex-purple);
+    border-color: var(--rag-purple);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(107, 70, 193, 0.08);
 }
 
 .library-card-item.active {
-    background: var(--cortex-purple-light);
-    border-color: var(--cortex-purple-border);
+    background: var(--rag-purple-light);
+    border-color: var(--rag-purple-border);
 }
 
 .library-card-left {
@@ -2234,8 +2234,8 @@ body.dark-mode .cortex-toast i {
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    background: var(--cortex-purple-light);
-    color: var(--cortex-purple);
+    background: var(--rag-purple-light);
+    color: var(--rag-purple);
     display: flex;
     align-items: center;
     justify-content: center;

@@ -485,7 +485,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Detect language or read active preference
         const activeLangOpt = document.querySelector(".lang-option.active");
-        const activeLang = activeLangOpt ? activeLangOpt.getAttribute("data-lang") : (localStorage.getItem("cortex_selected_lang") || "en");
+        const activeLang = activeLangOpt ? activeLangOpt.getAttribute("data-lang") : (localStorage.getItem("rag_selected_lang") || "en");
 
         const speechLangMap = {
             en: "en-US",
@@ -581,7 +581,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Sync with active language
             const activeLangOpt = document.querySelector(".lang-option.active");
-            const activeLang = activeLangOpt ? activeLangOpt.getAttribute("data-lang") : (localStorage.getItem("cortex_selected_lang") || "en");
+            const activeLang = activeLangOpt ? activeLangOpt.getAttribute("data-lang") : (localStorage.getItem("rag_selected_lang") || "en");
 
             const sttMap = {
                 en: "en-US",
@@ -736,7 +736,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (activeOpt) {
                     currentModelId = activeOpt.getAttribute("data-model") || "gemini";
                 } else {
-                    const saved = localStorage.getItem("cortex_selected_model");
+                    const saved = localStorage.getItem("rag_selected_model");
                     if (saved) currentModelId = JSON.parse(saved).id || "gemini";
                 }
             } catch (e) {
@@ -750,7 +750,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (activeLangOpt) {
                     currentLang = activeLangOpt.getAttribute("data-lang") || "en";
                 } else {
-                    currentLang = localStorage.getItem("cortex_selected_lang") || "en";
+                    currentLang = localStorage.getItem("rag_selected_lang") || "en";
                 }
             } catch (e) {
                 console.warn("Lang resolve error:", e);
@@ -927,11 +927,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Toast Notification helper
     function showToast(message) {
-        let toast = document.getElementById("cortex-toast");
+        let toast = document.getElementById("rag-toast");
         if (!toast) {
             toast = document.createElement("div");
-            toast.id = "cortex-toast";
-            toast.className = "cortex-toast";
+            toast.id = "rag-toast";
+            toast.className = "rag-toast";
             document.body.appendChild(toast);
         }
         toast.innerHTML = `<i class="fa-solid fa-check-circle"></i> <span>${message}</span>`;
@@ -946,28 +946,28 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================
     // 5.6 SIDEBAR COLLAPSE / EXPAND LOGIC
     // ==========================================
-    const cortexApp = document.querySelector(".cortex-app");
+    const ragApp = document.querySelector(".rag-app");
     const sidebarCollapseBtn = document.getElementById("sidebar-collapse-btn");
     const sidebarExpandBtn = document.getElementById("sidebar-expand-btn");
 
     function toggleSidebar(collapsed) {
-        if (!cortexApp) return;
-        const isCollapsed = collapsed !== undefined ? collapsed : !cortexApp.classList.contains("sidebar-collapsed");
-        cortexApp.classList.toggle("sidebar-collapsed", isCollapsed);
+        if (!ragApp) return;
+        const isCollapsed = collapsed !== undefined ? collapsed : !ragApp.classList.contains("sidebar-collapsed");
+        ragApp.classList.toggle("sidebar-collapsed", isCollapsed);
 
         if (sidebarExpandBtn) {
             sidebarExpandBtn.classList.toggle("hidden", !isCollapsed);
         }
 
         // Save preference in localStorage
-        localStorage.setItem("cortex_sidebar_collapsed", isCollapsed ? "true" : "false");
+        localStorage.setItem("rag_sidebar_collapsed", isCollapsed ? "true" : "false");
     }
 
     sidebarCollapseBtn?.addEventListener("click", () => toggleSidebar(true));
     sidebarExpandBtn?.addEventListener("click", () => toggleSidebar(false));
 
     // Restore saved sidebar preference
-    if (localStorage.getItem("cortex_sidebar_collapsed") === "true") {
+    if (localStorage.getItem("rag_sidebar_collapsed") === "true") {
         toggleSidebar(true);
     }
 
@@ -990,7 +990,7 @@ document.addEventListener("DOMContentLoaded", () => {
             langOptions.forEach(o => o.classList.remove("active"));
             opt.classList.add("active");
 
-            localStorage.setItem("cortex_selected_lang", selectedLang);
+            localStorage.setItem("rag_selected_lang", selectedLang);
             langPopup?.classList.remove("show");
             langBtn?.classList.remove("active");
 
@@ -1012,7 +1012,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Restore saved language preference
-    const savedLang = localStorage.getItem("cortex_selected_lang");
+    const savedLang = localStorage.getItem("rag_selected_lang");
     if (savedLang) {
         langOptions.forEach(opt => {
             if (opt.getAttribute("data-lang") === savedLang) {
@@ -1095,7 +1095,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Load saved chats from localStorage
     const getSavedSessions = () => {
         try {
-            return JSON.parse(localStorage.getItem("cortex_saved_chats")) || [];
+            return JSON.parse(localStorage.getItem("rag_saved_chats")) || [];
         } catch (e) {
             return [];
         }
@@ -1103,7 +1103,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const saveSessions = (sessions) => {
         try {
-            localStorage.setItem("cortex_saved_chats", JSON.stringify(sessions));
+            localStorage.setItem("rag_saved_chats", JSON.stringify(sessions));
         } catch (e) {
             console.error("Storage limit reached:", e);
         }
@@ -1407,7 +1407,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 // Save to localStorage
-                localStorage.setItem("cortex_selected_model", JSON.stringify({
+                localStorage.setItem("rag_selected_model", JSON.stringify({
                     id: modelId,
                     name: modelName,
                     icon: modelIcon
@@ -1422,7 +1422,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Restore saved model on load
         try {
-            const saved = localStorage.getItem("cortex_selected_model");
+            const saved = localStorage.getItem("rag_selected_model");
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed.name && selectedModelName) selectedModelName.innerText = parsed.name;

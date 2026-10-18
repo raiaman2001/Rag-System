@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cortex — AI ChatBot & Document Intelligence</title>
+    <title>RAG — AI ChatBot & Document Intelligence</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
@@ -12,15 +12,15 @@
 
 <body>
     <!-- Main Floating App Container (Dribbble Design) -->
-    <div class="cortex-app">
+    <div class="rag-app">
 
         <!-- ==========================================
              LEFT SIDEBAR (Navigation & History)
              ========================================== -->
-        <aside class="cortex-sidebar" id="sidebar">
+        <aside class="rag-sidebar" id="sidebar">
             <!-- Brand Header -->
             <div class="sidebar-top">
-                <div class="cortex-brand">
+                <div class="rag-brand">
                     <div class="brand-text">
                         <h2>RAG</h2>
                     </div>
@@ -37,14 +37,14 @@
             </button>
 
             <!-- Search Bar with ⌘K -->
-            <div class="cortex-search-box">
+            <div class="rag-search-box">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" placeholder="Search..." id="search-chat-input">
                 <span class="cmd-k">⌘K</span>
             </div>
 
             <!-- Nav Items -->
-            <div class="cortex-nav-list">
+            <div class="rag-nav-list">
                 <a href="#" class="nav-item active" id="nav-library"><i class="fa-regular fa-folder-closed"></i> Library <span class="nav-count" id="library-count">0</span></a>
             </div>
 
@@ -103,9 +103,9 @@
         <!-- ==========================================
              CENTER CHAT WORKSPACE
              ========================================== -->
-        <main class="cortex-main">
+        <main class="rag-main">
             <!-- Top Navbar -->
-            <header class="cortex-topbar">
+            <header class="rag-topbar">
                 <div class="topbar-left">
                     <button class="topbar-btn sidebar-expand-btn hidden" id="sidebar-expand-btn" title="Open Sidebar">
                         <i class="fa-solid fa-bars-staggered"></i>
@@ -174,7 +174,7 @@
             </header>
 
             <!-- Workspace Body -->
-            <div class="cortex-workspace-body">
+            <div class="rag-workspace-body">
 
                 <!-- Glowing Purple 3D Fluid Orb (From Dribbble) -->
                 <div class="orb-container" id="orb-container">
@@ -186,7 +186,7 @@
                 </div>
 
                 <!-- Chat Messages Stream -->
-                <div class="cortex-chat-stream hidden" id="chat-window">
+                <div class="rag-chat-stream hidden" id="chat-window">
                     <div class="message ai-message">
                         <div class="avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
                         <div class="msg-content">Systems online. Please upload a document or ask a question to begin.<span class="timestamp">Just now</span></div>
@@ -194,7 +194,7 @@
                 </div>
 
                 <!-- Signature Floating Prompt Box (From Dribbble) -->
-                <div class="cortex-prompt-card">
+                <div class="rag-prompt-card">
                     <div class="prompt-card-top">
                         <div class="prompt-tools">
                             <button class="mic-circle-btn" id="mic-btn" title="Voice Typing (Speech-to-Text)"><i class="fa-solid fa-microphone"></i></button>
@@ -250,7 +250,7 @@
             </div>
 
             <!-- Footer Bar -->
-            <footer class="cortex-footer">
+            <footer class="rag-footer">
                 <div class="footer-btn-wrapper">
                     <button class="footer-btn" id="lang-btn" title="Language / Translation">
                         <i class="fa-solid fa-language"></i>
@@ -316,7 +316,7 @@
         <!-- ==========================================
              RIGHT PANEL (RAG Pipeline & Data Profiling)
              ========================================== -->
-        <aside class="cortex-right-panel" id="right-panel">
+        <aside class="rag-right-panel" id="right-panel">
             <div class="panel-header">
                 <h3><i class="fa-solid fa-chart-line"></i> Intelligence Hub</h3>
                 <button class="close-panel-btn" id="close-panel-btn"><i class="fa-solid fa-xmark"></i></button>
