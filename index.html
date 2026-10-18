@@ -4,124 +4,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 RAG Command Center</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Cortex — AI ChatBot & Document Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div class="dashboard-layout">
+    <!-- Main Floating App Container (Dribbble Design) -->
+    <div class="cortex-app">
 
-        <aside class="sidebar glass-panel" data-tilt data-tilt-max="2" data-tilt-speed="400" data-tilt-perspective="1000">
-            <div class="brand">
-                <i class="fa-solid fa-robot neon-icon pulse-anim"></i>
-                <div>
-                    <h2>RAG Command Center</h2>
-                    <p>AI-Powered Document Intelligence</p>
+        <!-- ==========================================
+             LEFT SIDEBAR (Navigation & History)
+             ========================================== -->
+        <aside class="cortex-sidebar" id="sidebar">
+            <!-- Brand Header -->
+            <div class="sidebar-top">
+                <div class="cortex-brand">
+                    <div class="brand-text">
+                        <h2>RAG</h2>
+                    </div>
+                </div>
+                <button class="icon-toggle-btn" id="sidebar-collapse-btn" title="Toggle Sidebar">
+                    <i class="fa-solid fa-bars-staggered"></i>
+                </button>
+            </div>
+
+            <!-- New Chat Button (Signature Dark Pill) -->
+            <button class="new-chat-btn" onclick="clearChat()">
+                <i class="fa-solid fa-plus"></i>
+                <span>New chat</span>
+            </button>
+
+            <!-- Search Bar with ⌘K -->
+            <div class="cortex-search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search..." id="search-chat-input">
+                <span class="cmd-k">⌘K</span>
+            </div>
+
+            <!-- Nav Items -->
+            <div class="cortex-nav-list">
+                <a href="#" class="nav-item active" id="nav-library"><i class="fa-regular fa-folder-closed"></i> Library <span class="nav-count" id="library-count">0</span></a>
+            </div>
+
+            <!-- Document Upload & Active Status Widget -->
+            <div class="sidebar-doc-card">
+                <div class="upload-zone" id="upload-zone">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Drop file or <span id="browse-btn">Browse</span></p>
+                    <div class="support-text">PDF, CSV, Excel</div>
+                </div>
+
+                <div class="upload-type-btns">
+                    <button class="btn-type active" id="btn-pdf"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                    <button class="btn-type" id="btn-excel"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                </div>
+
+                <div class="doc-status-mini">
+                    <div class="doc-stat-row">
+                        <span class="stat-lbl"><i class="fa-regular fa-file"></i> File</span>
+                        <span class="stat-val highlight" id="doc-file">NA</span>
+                    </div>
+                    <div class="doc-stat-row">
+                        <span class="stat-lbl"><i class="fa-regular fa-copy"></i> Pages</span>
+                        <span class="stat-val" id="doc-pages">NA</span>
+                    </div>
+                    <div class="doc-stat-row">
+                        <span class="stat-lbl"><i class="fa-solid fa-layer-group"></i> Chunks</span>
+                        <span class="stat-val" id="doc-chunks">NA</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="upload-zone" id="upload-zone">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <p>Drag & Drop files or <span id="browse-btn">Browse</span></p>
-                <div class="support-text">Supports: PDF, CSV, Excel</div>
-            </div>
-
-            <div class="upload-type-btns">
-                <button class="btn-type active" id="btn-pdf"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                <button class="btn-type" id="btn-excel"><i class="fa-solid fa-file-excel"></i> Excel/CSV</button>
-
-            </div>
-
-            <div class="doc-status glass-card">
-                <h3><i class="fa-solid fa-file-pdf"></i> Active Document</h3>
-                <ul>
-                    <li>
-                        <span>File</span>
-                        <span class="highlight" id="doc-file">NA</span>
-                    </li>
-                    <li>
-                        <span>Pages</span>
-                        <span id="doc-pages">NA</span>
-                    </li>
-                    <li>
-                        <span>Chunks</span>
-                        <span id="doc-chunks">NA</span>
-                    </li>
-                    <li>
-                        <span>Model</span>
-                        <span id="doc-model">NA</span>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="pipeline-status">
-                <h3>System Status</h3>
-                <div class="status-item">
-                    <div class="dot" id="embedding-dot"></div>
-                    <span id="embedding-status">Waiting...</span>
-                </div>
-                <div class="status-item">
-                    <div class="dot" id="vector-dot"></div>
-                    <span id="vector-status">Not Connected</span>
-                </div>
-                <div class="status-item">
-                    <div class="dot" id="retriever-dot"></div>
-                    <span id="retriever-status">Inactive</span>
-                </div>
-                <div class="status-item">
-                    <div class="dot" id="gemini-dot"></div>
-                    <span id="gemini-status">Offline</span>
+            <!-- Chat History (Grouped by time, dynamically populated from Library) -->
+            <div class="history-scroll-section" id="history-container">
+                <div class="history-group-title">Previous Chats</div>
+                <div class="history-items-list" id="history-items-list">
+                    <!-- Populated dynamically from saved chat history -->
                 </div>
             </div>
 
-            <div class="sidebar-actions">
-                <button class="btn btn-primary" onclick="clearChat()"><i class="fa-solid fa-plus"></i> New Chat</button>
-                <button class="btn btn-outline" id="rebuild-btn"><i class="fa-solid fa-database"></i> Rebuild Vector
-                    DB</button>
-                <button class="btn btn-outline" id="export-btn"><i class="fa-solid fa-download"></i> Export
-                    Chat</button>
-
-                <button class="btn btn-outline" id="theme-toggle">
-                    <i class="fa-solid fa-sun"></i> <span>Light Mode</span>
+            <!-- Bottom User Profile Pill -->
+            <div class="user-profile-pill">
+                <div class="user-avatar-circle">
+                    <span>AR</span>
+                </div>
+                <div class="user-meta">
+                    <h4>Aman Rai</h4>
+                    <p>aman.rai@rag.ai</p>
+                </div>
+                <button class="logout-icon-btn" title="Settings / Account">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 </button>
             </div>
         </aside>
 
-        <main class="chat-center glass-panel">
-            <div class="chat-content-wrapper">
-                <header class="chat-header">
-                    <h1 class="gradient-text">Ask Anything From Your Documents</h1>
-                    <p>Advanced AI Retrieval-Augmented Generation</p>
-                </header>
+        <!-- ==========================================
+             CENTER CHAT WORKSPACE
+             ========================================== -->
+        <main class="cortex-main">
+            <!-- Top Navbar -->
+            <header class="cortex-topbar">
+                <div class="topbar-left">
+                    <button class="topbar-btn sidebar-expand-btn hidden" id="sidebar-expand-btn" title="Open Sidebar">
+                        <i class="fa-solid fa-bars-staggered"></i>
+                    </button>
+                    <div class="model-dropdown-wrapper">
+                        <button class="model-selector-pill" id="model-selector-btn" type="button" aria-haspopup="true" aria-expanded="false">
+                            <i class="fa-solid fa-wand-magic-sparkles" id="selected-model-icon"></i>
+                            <span id="selected-model-name">Google Gemini 1.5</span>
+                            <i class="fa-solid fa-chevron-down pill-arrow" id="dropdown-arrow-icon"></i>
+                        </button>
+                        <div class="model-dropdown-menu" id="model-dropdown-menu">
+                            <div class="model-dropdown-header">
+                                <span>Switch Intelligence Engine</span>
+                            </div>
 
-                <div class="chat-window" id="chat-window">
+                            <div class="model-group-title">Cloud AI Models</div>
+                            <div class="model-option active" data-model="gemini" data-name="Google Gemini 1.5" data-icon="fa-solid fa-wand-magic-sparkles">
+                                <div class="model-opt-icon gemini"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                <div class="model-opt-info">
+                                    <div class="model-opt-title">Google Gemini 1.5 <span class="badge-recommended">Connected</span></div>
+                                    <div class="model-opt-desc">Multimodal, 1M+ context window & real-time reasoning</div>
+                                </div>
+                                <i class="fa-solid fa-check checkmark"></i>
+                            </div>
+
+                            <div class="model-option" data-model="chatgpt" data-name="ChatGPT (GPT-4o)" data-icon="fa-solid fa-bolt">
+                                <div class="model-opt-icon chatgpt"><i class="fa-solid fa-bolt"></i></div>
+                                <div class="model-opt-info">
+                                    <div class="model-opt-title">ChatGPT (GPT-4o)</div>
+                                    <div class="model-opt-desc">OpenAI flagship model with deep instruction following</div>
+                                </div>
+                                <i class="fa-solid fa-check checkmark"></i>
+                            </div>
+
+                            <div class="model-group-title">Best Local LLM for your Laptop (8GB RAM / i3)</div>
+                            <div class="model-option" data-model="llama3.2" data-name="Llama 3.2 3B (Local)" data-icon="fa-solid fa-microchip">
+                                <div class="model-opt-icon local"><i class="fa-solid fa-microchip"></i></div>
+                                <div class="model-opt-info">
+                                    <div class="model-opt-title">Llama 3.2 3B <span class="badge-tag">Best for 8GB RAM & CPU</span></div>
+                                    <div class="model-opt-desc">Meta's lightweight model (~2.0 GB RAM). Fast on i3 CPU, 128k context, no system lag</div>
+                                </div>
+                                <i class="fa-solid fa-check checkmark"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="topbar-actions">
+                    <button class="topbar-btn" id="share-link-btn" title="Share link"><i class="fa-solid fa-link"></i></button>
+                    <button class="topbar-pill-btn" id="export-btn" title="Export Chat">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Export chat</span>
+                    </button>
+                    <button class="topbar-pill-btn" id="rebuild-btn" title="Rebuild Vector DB">
+                        <i class="fa-solid fa-database"></i>
+                        <span>Rebuild</span>
+                    </button>
+                    <button class="topbar-pill-btn accent" id="panel-toggle-btn" title="Toggle Insights Panel">
+                        <i class="fa-solid fa-chart-simple"></i>
+                        <span>Insights</span>
+                    </button>
+                    <button class="topbar-btn" id="theme-toggle" title="Toggle Theme">
+                        <i class="fa-solid fa-moon"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Workspace Body -->
+            <div class="cortex-workspace-body">
+
+                <!-- Glowing Purple 3D Fluid Orb (From Dribbble) -->
+                <div class="orb-container" id="orb-container">
+                    <div class="ambient-glow"></div>
+                    <div class="fluid-orb">
+                        <div class="orb-inner-highlight"></div>
+                        <div class="orb-specular"></div>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Stream -->
+                <div class="cortex-chat-stream hidden" id="chat-window">
                     <div class="message ai-message">
-                        <div class="avatar"><i class="fa-solid fa-robot"></i></div>
-                        <div class="msg-content">Systems online. Please upload a document to begin.<span class="timestamp">Just now</span></div>
+                        <div class="avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div class="msg-content">Systems online. Please upload a document or ask a question to begin.<span class="timestamp">Just now</span></div>
                     </div>
                 </div>
 
-                <div class="chat-input-container">
-                    <div class="floating-input glass-card">
-                        <button class="icon-btn" id="attach-btn"><i class="fa-solid fa-paperclip"></i></button>
-                        <input type="text" id="chat-input" placeholder="Ask questions about your uploaded documents..."
-                            autocomplete="off">
-                        <button class="icon-btn"><i class="fa-solid fa-microphone"></i></button>
-                        <button class="send-btn" id="send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                <!-- Signature Floating Prompt Box (From Dribbble) -->
+                <div class="cortex-prompt-card">
+                    <div class="prompt-card-top">
+                        <div class="prompt-tools">
+                            <button class="mic-circle-btn" id="mic-btn" title="Voice Typing (Speech-to-Text)"><i class="fa-solid fa-microphone"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card-input-row">
+                        <input type="text" id="chat-input" placeholder="Ask questions about your uploaded documents or datasets..." autocomplete="off">
+                        <button class="send-action-btn" id="send-btn" title="Send query">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </button>
+                    </div>
+
+                    <div class="prompt-card-bottom">
+                        <div class="saved-prompts-btn">
+                            <i class="fa-solid fa-sparkles"></i>
+                            <span>Saved prompts</span>
+                        </div>
+                        <button class="attach-chip-btn" id="attach-btn" title="Attach Document">
+                            <i class="fa-solid fa-paperclip"></i>
+                            <span>Attach file</span>
+                        </button>
                     </div>
                 </div>
+
+                <!-- 3 Quick Suggestion Cards (From Dribbble) -->
+                <div class="suggestion-cards-grid" id="suggestion-cards">
+                    <div class="sugg-card" onclick="triggerSuggestion('Synthesize the key points and conclusions from the uploaded document.')">
+                        <div class="sugg-icon"><i class="fa-regular fa-clock"></i></div>
+                        <div class="sugg-text">
+                            <h4>Synthesize Data</h4>
+                            <p>Turn document notes & chunks into 5 key bullet points for the team.</p>
+                        </div>
+                    </div>
+
+                    <div class="sugg-card" onclick="triggerSuggestion('Perform a creative brainstorm on this data to uncover unique trends and strategic insights.')">
+                        <div class="sugg-icon"><i class="fa-regular fa-lightbulb"></i></div>
+                        <div class="sugg-text">
+                            <h4>Creative Brainstorm</h4>
+                            <p>Generate actionable taglines, strategic ideas, and high-impact takeaways.</p>
+                        </div>
+                    </div>
+
+                    <div class="sugg-card" onclick="triggerSuggestion('Verify claims and factual citations with similarity confidence scores.')">
+                        <div class="sugg-icon"><i class="fa-solid fa-hammer"></i></div>
+                        <div class="sugg-text">
+                            <h4>Check Facts</h4>
+                            <p>Compare key differences, verify citations, and check similarity scores.</p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
+
+            <!-- Footer Bar -->
+            <footer class="cortex-footer">
+                <div class="footer-btn-wrapper">
+                    <button class="footer-btn" id="lang-btn" title="Language / Translation">
+                        <i class="fa-solid fa-language"></i>
+                    </button>
+                    <!-- Language Selection Popup -->
+                    <div class="lang-popup" id="lang-popup">
+                        <div class="lang-popup-header">Indian Languages</div>
+                        <div class="lang-option active" data-lang="en">
+                            <span>🇺🇸 English</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                        <div class="lang-option" data-lang="hinglish">
+                            <span>🇮🇳 Hinglish</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                        <div class="lang-option" data-lang="hi">
+                            <span>🇮🇳 हिंदी (Hindi)</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                        <div class="lang-option" data-lang="bho">
+                            <span>🇮🇳 भोजपुरी (Bhojpuri)</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                        <div class="lang-option" data-lang="bn">
+                            <span>🇮🇳 বাংলা (Bengali)</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                        <div class="lang-option" data-lang="mr">
+                            <span>🇮🇳 मराठी (Marathi)</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                        <div class="lang-option" data-lang="ta">
+                            <span>🇮🇳 தமிழ் (Tamil)</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+
+                        <div class="lang-popup-header" style="margin-top: 0.4rem;">International Languages</div>
+                        <div class="lang-option" data-lang="es">
+                            <span>🇪🇸 Español (Spanish)</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                        <div class="lang-option" data-lang="ru">
+                            <span>🇷🇺 Русский (Russian)</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                        <div class="lang-option" data-lang="zh">
+                            <span>🇨🇳 中文 (Chinese)</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                        <div class="lang-option" data-lang="ja">
+                            <span>🇯🇵 日本語 (Japanese)</span>
+                            <i class="fa-solid fa-check lang-check"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="footer-btn" id="help-btn" title="Help & Documentation">
+                    <i class="fa-regular fa-circle-question"></i>
+                </button>
+            </footer>
         </main>
 
-        <!-- Right Panel - Multiple Dashboards -->
-        <aside class="right-panel">
-            
-            <!-- 1. PDF Dashboard (Default) -->
+        <!-- ==========================================
+             RIGHT PANEL (RAG Pipeline & Data Profiling)
+             ========================================== -->
+        <aside class="cortex-right-panel" id="right-panel">
+            <div class="panel-header">
+                <h3><i class="fa-solid fa-chart-line"></i> Intelligence Hub</h3>
+                <button class="close-panel-btn" id="close-panel-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- PDF Dashboard View -->
             <div id="dashboard-pdf" class="dashboard-view active">
-                <div class="glass-panel pipeline-visualizer">
-                    <h3><i class="fa-solid fa-microchip"></i> Live RAG Pipeline</h3>
+                <div class="panel-section">
+                    <div class="section-title"><i class="fa-solid fa-microchip"></i> Live RAG Pipeline</div>
                     <div class="rag-steps">
                         <div class="rag-step" id="step-1"><i class="fa-solid fa-keyboard"></i> Question Input</div>
                         <div class="rag-step" id="step-2"><i class="fa-solid fa-wave-square"></i> Embedding Search</div>
@@ -129,7 +333,7 @@
                         <div class="rag-step" id="step-4"><i class="fa-solid fa-bullseye"></i> Similarity Matching</div>
                         <div class="rag-step" id="step-5"><i class="fa-solid fa-brain"></i> LLM Synthesis</div>
                     </div>
-                    
+
                     <div class="retrieval-results hidden" id="retrieval-results">
                         <div class="confidence-wrapper">
                             <div class="circular-chart">
@@ -137,13 +341,13 @@
                             </div>
                             <div class="conf-text">Confidence<br>Score</div>
                         </div>
-                        <h4><i class="fa-solid fa-file-lines"></i> Retrieved Sources</h4>
+                        <div class="sub-label"><i class="fa-solid fa-file-lines"></i> Retrieved Sources</div>
                         <div class="tags">
                             <span class="tag">Page 12</span>
                             <span class="tag">Page 45</span>
                             <span class="tag">Page 48</span>
                         </div>
-                        <h4><i class="fa-solid fa-quote-right"></i> Top Match Chunk</h4>
+                        <div class="sub-label"><i class="fa-solid fa-quote-right"></i> Top Match Chunk</div>
                         <div class="chunk-card">
                             <div class="chunk-score">0.89 Similarity</div>
                             "...revenue grew by 24% in Q3, heavily driven by the integration of the new AI-driven analytics architecture scaling across enterprise clients..."
@@ -151,55 +355,54 @@
                     </div>
                 </div>
 
-
-                <div class="glass-panel analytics-dashboard">
-                    <h3><i class="fa-solid fa-chart-line"></i> Analytics & Insights</h3>
-                    
+                <div class="panel-section">
+                    <div class="section-title"><i class="fa-solid fa-chart-pie"></i> Analytics & Metrics</div>
                     <div class="stats-grid">
-                        <div class="stat-box glass-card">
+                        <div class="stat-box">
                             <span class="stat-value text-primary" id="stat-queries">0</span>
                             <span class="stat-label">Total Queries</span>
                         </div>
-                        <div class="stat-box glass-card">
+                        <div class="stat-box">
                             <span class="stat-value text-primary" id="stat-response">0.0s</span>
                             <span class="stat-label">Avg Response</span>
                         </div>
-                        <div class="stat-box glass-card">
+                        <div class="stat-box">
                             <span class="stat-value text-primary" id="stat-dimensions">1536</span>
                             <span class="stat-label">Dimensions</span>
                         </div>
-                        <div class="stat-box glass-card">
+                        <div class="stat-box">
                             <span class="stat-value text-primary" id="stat-accuracy">100%</span>
                             <span class="stat-label">Accuracy</span>
                         </div>
                     </div>
-                </div>            </div>
+                </div>
+            </div>
 
-            <!-- 2. Excel/CSV Dashboard (Advanced Agent) -->
+            <!-- Excel Dashboard View -->
             <div id="dashboard-excel" class="dashboard-view hidden">
-                <div class="glass-panel pipeline-visualizer">
-                    <h3><i class="fa-solid fa-microscope"></i> Data Profiling</h3>
-                    <div class="stats-grid" style="margin-top: 1rem;">
-                        <div class="stat-box glass-card">
+                <div class="panel-section">
+                    <div class="section-title"><i class="fa-solid fa-microscope"></i> Data Profiling</div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
                             <span class="stat-value text-primary" id="excel-rows">0</span>
                             <span class="stat-label">Total Rows</span>
                         </div>
-                        <div class="stat-box glass-card">
+                        <div class="stat-box">
                             <span class="stat-value text-primary" id="excel-cols">0</span>
                             <span class="stat-label">Columns</span>
                         </div>
-                        <div class="stat-box glass-card">
+                        <div class="stat-box">
                             <span class="stat-value text-warning" id="excel-missing">0</span>
                             <span class="stat-label">Missing Values</span>
                         </div>
-                        <div class="stat-box glass-card">
+                        <div class="stat-box">
                             <span class="stat-value text-danger" id="excel-dupes">0</span>
                             <span class="stat-label">Duplicate Rows</span>
                         </div>
                     </div>
-                    
+
                     <div class="issues-table-container mt-3 hidden" id="issues-container">
-                        <h4 style="margin-top: 1.5rem;"><i class="fa-solid fa-triangle-exclamation"></i> Identified Issues</h4>
+                        <div class="sub-label"><i class="fa-solid fa-triangle-exclamation"></i> Identified Issues</div>
                         <div class="table-scroll-wrapper">
                             <table class="issues-table">
                                 <thead>
@@ -209,49 +412,31 @@
                                         <th>ID / Value</th>
                                     </tr>
                                 </thead>
-                                <tbody id="issues-table-body">
-                                    <!-- Populated by JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <h4 style="margin-top: 1.5rem;"><i class="fa-solid fa-shield-halved"></i> Data Quality Validation</h4>
-                        <div class="validation-list" style="margin-top: 1rem;">
-                            <div class="validation-item" id="val-emails">
-                                <i class="fa-solid fa-envelope"></i>
-                                <div class="val-text">Checking Emails...</div>
-                            </div>
-                            <div class="validation-item" id="val-dates">
-                                <i class="fa-solid fa-calendar-days"></i>
-                                <div class="val-text">Checking Dates...</div>
-                            </div>
-                            <div class="validation-item" id="val-numeric">
-                                <i class="fa-solid fa-hashtag"></i>
-                                <div class="val-text">Checking Numeric Outliers...</div>
-                            </div>
-                        </div>
-
-                        <div class="table-scroll-wrapper" id="validation-table-wrapper" style="display: none; margin-top: 1rem;">
-                            <table class="issues-table" id="validation-table">
-                                <thead>
-                                    <tr>
-                                        <th>Error Type</th>
-                                        <th>Column</th>
-                                        <th>Invalid Value</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Populated dynamically -->
-                                </tbody>
+                                <tbody id="issues-table-body"></tbody>
                             </table>
                         </div>
                     </div>
 
-                <div class="glass-panel analytics-dashboard">
-                    <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Automatic Insights</h3>
-                    
-                    <div class="insights-container mt-3">
+                    <div class="sub-label" style="margin-top: 1rem;"><i class="fa-solid fa-shield-halved"></i> Data Quality</div>
+                    <div class="validation-list">
+                        <div class="validation-item" id="val-emails">
+                            <i class="fa-solid fa-envelope"></i>
+                            <div class="val-text">Checking Emails...</div>
+                        </div>
+                        <div class="validation-item" id="val-dates">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            <div class="val-text">Checking Dates...</div>
+                        </div>
+                        <div class="validation-item" id="val-numeric">
+                            <i class="fa-solid fa-hashtag"></i>
+                            <div class="val-text">Checking Numeric Outliers...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <div class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Automatic Insights</div>
+                    <div class="insights-container">
                         <div class="insight-card">
                             <div class="insight-icon"><i class="fa-solid fa-chart-pie"></i></div>
                             <div class="insight-content">
@@ -267,22 +452,17 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="chart-container glass-card mt-3" style="text-align: center; padding: 2rem 1rem;">
-                        <i class="fa-solid fa-chart-column" style="font-size: 2rem; color: var(--border);"></i>
-                        <h4 style="margin-top: 1rem; color: var(--text-muted);">Visualization Engine Ready</h4>
-                        <p style="font-size: 0.8rem; color: var(--text-muted);">Ask to generate a chart (e.g. "Create salary chart")</p>
-                    </div>
                 </div>
             </div>
 
-
-
         </aside>
+
     </div>
 
+    <!-- Hidden File Input -->
     <input type="file" id="hidden-file-input" style="display: none;" accept=".pdf,.csv,.xlsx,.xls">
 
+    <!-- Upload Progress Modal -->
     <div id="upload-modal" class="upload-modal hidden">
         <div class="upload-card">
             <h2>Uploading Document</h2>
@@ -294,8 +474,85 @@
         </div>
     </div>
 
-    <script src="script.js?v=2.0"></script>
+    <!-- Help & Documentation Modal -->
+    <div id="help-modal" class="help-modal hidden">
+        <div class="help-modal-card">
+            <div class="help-header">
+                <div class="help-title">
+                    <i class="fa-regular fa-circle-question"></i>
+                    <h3>RAG System User Guide</h3>
+                </div>
+                <button class="close-help-btn" id="close-help-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="help-body">
+                <div class="help-item">
+                    <div class="help-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <div class="help-text">
+                        <h4>1. Upload Documents</h4>
+                        <p>Click the <b>Attach file</b> button or drag & drop documents. Supported formats: <code>.pdf</code>, <code>.csv</code>, <code>.xlsx</code>, <code>.txt</code>.</p>
+                    </div>
+                </div>
+                <div class="help-item">
+                    <div class="help-icon"><i class="fa-solid fa-diagram-project"></i></div>
+                    <div class="help-text">
+                        <h4>2. Automatic Vector Embeddings</h4>
+                        <p>Document text is chunked and embedded via <code>all-MiniLM-L6-v2</code> into a local FAISS vector database.</p>
+                    </div>
+                </div>
+                <div class="help-item">
+                    <div class="help-icon"><i class="fa-solid fa-sliders"></i></div>
+                    <div class="help-text">
+                        <h4>3. Switch Intelligence Model</h4>
+                        <p>Select your preferred AI engine from the topbar: <b>Google Gemini 1.5</b>, <b>ChatGPT (GPT-4o)</b>, or offline <b>Llama 3.2 3B (Local)</b>.</p>
+                    </div>
+                </div>
+                <div class="help-item">
+                    <div class="help-icon"><i class="fa-solid fa-language"></i></div>
+                    <div class="help-text">
+                        <h4>4. Multi-Language Answers</h4>
+                        <p>Click the <b>Language icon</b> at the bottom right to receive answers in English, Hinglish, or Pure Hindi.</p>
+                    </div>
+                </div>
+                <div class="help-item">
+                    <div class="help-icon"><i class="fa-solid fa-chart-simple"></i></div>
+                    <div class="help-text">
+                        <h4>5. Intelligence Hub & Sources</h4>
+                        <p>Toggle the <b>Insights</b> button in the topbar to view citations, confidence scores, and dataset statistics.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Library Modal / Drawer -->
+    <div id="library-modal" class="library-modal hidden">
+        <div class="library-modal-card">
+            <div class="library-header">
+                <div class="library-title">
+                    <i class="fa-regular fa-folder-closed"></i>
+                    <h3>Chat Library</h3>
+                    <span class="library-badge-pill" id="library-modal-count">0 chats</span>
+                </div>
+                <div class="library-header-actions">
+                    <button class="clear-all-history-btn" id="clear-all-history-btn" title="Clear all saved chats">
+                        <i class="fa-regular fa-trash-can"></i> Clear All
+                    </button>
+                    <button class="close-library-btn" id="close-library-btn"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <div class="library-search-row">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="library-modal-search" placeholder="Search conversations...">
+            </div>
+
+            <div class="library-modal-list" id="library-modal-list">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=3.0"></script>
 </body>
 
 </html>

@@ -38,11 +38,60 @@ embedding_model = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 
-# gemini-3.1-flash-lite is used since other model quotas are exhausted.
-llm = ChatGoogleGenerativeAI(
+import requests
+from openai import OpenAI
+
+# ================= LLM PROVIDERS CONFIG =================
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+
+# Default Gemini Model
+gemini_llm = ChatGoogleGenerativeAI(
     model="gemini-3.1-flash-lite",
     temperature=0.1
 )
+
+def query_chatgpt(prompt_text):
+    load_dotenv(override=True)
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OpenAI API Key nahi mila! Kripya .env file me OPENAI_API_KEY='sk-...' add karein.")
+    client = OpenAI(api_key=api_key)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        temperature=0.1,
+        messages=[
+            {"role": "system", "content": "You are a helpful and intelligent assistant for Document RAG question answering."},
+            {"role": "user", "content": prompt_text}
+        ]
+    )
+    return response.choices[0].message.content
+
+def query_local_ollama(prompt_text, model_name="llama3.2"):
+    base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+    try:
+        res = requests.post(
+            f"{base_url}/api/generate",
+            json={
+                "model": model_name,
+                "prompt": prompt_text,
+                "stream": False,
+                "options": {
+                    "temperature": 0.1,
+                    "num_ctx": 4096
+                }
+            },
+            timeout=120
+        )
+        if res.status_code == 200:
+            return res.json().get("response", "")
+        else:
+            raise ValueError(f"Ollama error (status {res.status_code}): {res.text}")
+    except requests.exceptions.ConnectionError:
+        raise ConnectionError(
+            "Local Ollama server chalu nahi hai! "
+            "Kripya Ollama run karein: terminal me 'ollama run llama3.2' chalayein taaki model local port 11434 par accessible ho."
+        )
 
 # ================= GLOBAL VARIABLES =================
 rag_chain = None
@@ -56,7 +105,8 @@ Rules:
 1. Understand the user's question and synthesize the context to provide a clear, easy-to-read, and well-structured answer.
 2. Do NOT just copy-paste raw text. Rephrase and explain the information beautifully like a human expert would.
 3. If the answer is not in the context, politely and conversationally let the user know that you don't have that specific detail right now. Do NOT use words like "AI", "LLM", "context", or "uploaded document". Act entirely like a helpful human.
-4. CRITICAL: Do NOT use asterisks (*) anywhere in your response (neither for bullet points nor bolding). If you need bullet points, use plain dashes (-) or elegant emojis. Keep the answer format clean, warm, and conversational.
+4. Language Requirement: Respond strictly in {language}.
+5. CRITICAL: Do NOT use asterisks (*) anywhere in your response (neither for bullet points nor bolding). If you need bullet points, use plain dashes (-) or elegant emojis. Keep the answer format clean, warm, and conversational.
 
 Context:
 {context}
@@ -69,7 +119,7 @@ Answer:
 
 PROMPT = PromptTemplate(
     template=prompt_template,
-    input_variables=["context", "question"]
+    input_variables=["context", "question", "language"]
 )
 
 # ================= SMART DOCUMENT LOADER =================
@@ -110,6 +160,9 @@ def load_documents(file_path):
             # Replace empty strings and whitespace with NA for accurate missing count
             df_cleaned = df.replace(r'^\s*$', pd.NA, regex=True)
             
+            if len(df_cleaned.columns) == 0:
+                continue
+
             # Identify primary ID column (fallback to first column)
             id_col = next((c for c in df_cleaned.columns if 'id' in str(c).lower()), df_cleaned.columns[0])
             
@@ -301,17 +354,6 @@ def upload_file():
             }
         )
 
-        # ================= RAG CHAIN =================
-        rag_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            retriever=retriever,
-            chain_type="stuff",
-            return_source_documents=True,
-            chain_type_kwargs={
-                "prompt": PROMPT
-            }
-        )
-
         extra_stats = {}
         if file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
             global advanced_excel_stats
@@ -345,70 +387,93 @@ def upload_file():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    global rag_chain
+    global rag_chain, vector_db
 
-    if rag_chain is None:
+    if vector_db is None:
         return jsonify({
-            "answer":
-            "Please upload a file first.",
+            "answer": "Please upload a file first.",
             "sources": []
         })
 
-    data = request.json
+    data = request.json or {}
     query = data.get("message")
+    selected_model = (data.get("model") or "gemini").lower()
+    selected_language = data.get("language") or "English"
+
+    # Map friendly language name
+    lang_map = {
+        "en": "English",
+        "hi": "Hindi (शुद्ध एवं सरल हिंदी)",
+        "hinglish": "Hinglish (Hindi written in natural Roman/English alphabets, conversational)",
+        "bho": "Bhojpuri (शुद्ध भोजपुरी भाषा - जइसे: 'रउआ खातिर ई जानकारी बा')",
+        "bn": "Bengali (বাংলা ভাষা)",
+        "mr": "Marathi (मराठी भाषा)",
+        "ta": "Tamil (தமிழ் மொழி)",
+        "es": "Spanish (Español)",
+        "ru": "Russian (Русский язык)",
+        "zh": "Chinese Simplified (中文 / 简体中文)",
+        "ja": "Japanese (日本語)"
+    }
+    target_language = lang_map.get(selected_language.lower(), selected_language)
 
     if not query:
         return jsonify({
-            "error":
-            "No question provided"
+            "error": "No question provided"
         }), 400
 
     try:
-        response = rag_chain.invoke({
-            "query": query
-        })
+        # 1. Retrieve top matching chunks using FAISS
+        retriever = vector_db.as_retriever(
+            search_type="similarity",
+            search_kwargs={"k": 10}
+        )
+        source_docs = retriever.invoke(query)
+        context_text = "\n\n".join([doc.page_content for doc in source_docs])
 
-        answer = response["result"]
+        # 2. Extract citations / sources
         sources = []
-
-        for doc in response.get(
-            "source_documents", []
-        ):
-
+        for doc in source_docs:
             if "page" in doc.metadata:
                 page = doc.metadata["page"]
                 if isinstance(page, int) or (isinstance(page, str) and page.isdigit()):
                     sources.append(f"Page {int(page)+1}")
                 else:
                     sources.append(str(page))
-
             elif "row" in doc.metadata:
                 row = doc.metadata["row"]
-
-                sources.append(
-                    f"Row {int(row)+1}"
-                )
-
+                sources.append(f"Row {int(row)+1}")
             elif "line" in doc.metadata:
                 line = doc.metadata["line"]
-
-                sources.append(
-                    f"Line {int(line)+1}"
-                )
-
+                sources.append(f"Line {int(line)+1}")
             else:
-                sources.append(
-                    "Document Context"
-                )
+                sources.append("Document Context")
+
+        # 3. Format Prompt with Language
+        full_prompt = prompt_template.format(
+            context=context_text,
+            question=query,
+            language=target_language
+        )
+
+        # 4. Route to the chosen Model Provider
+        if selected_model == "chatgpt":
+            answer = query_chatgpt(full_prompt)
+
+        elif selected_model in ["llama3.2", "local"]:
+            answer = query_local_ollama(full_prompt, model_name="llama3.2")
+
+        else: # Default Gemini
+            answer = gemini_llm.invoke(full_prompt).content
 
         return jsonify({
             "answer": answer,
-            "sources": list(set(sources))
+            "sources": list(set(sources)),
+            "model_used": selected_model,
+            "language": selected_language
         })
 
     except Exception as e:
         print("Chat Error:", e)
-
         return jsonify({
             "error": str(e)
         }), 500

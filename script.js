@@ -1,33 +1,39 @@
 document.addEventListener("DOMContentLoaded", () => {
 
     // ==========================================
-    // 1. THEME
+    // 1. THEME (Default: Light Mode)
     // ==========================================
-    const isLight = localStorage.getItem("theme") === "light";
+    const savedTheme = localStorage.getItem("theme");
+    const isDark = savedTheme === "dark";
 
     const themeToggleBtn = document.getElementById("theme-toggle");
     const themeIcon = themeToggleBtn?.querySelector("i");
     const themeText = themeToggleBtn?.querySelector("span");
 
-    if (isLight) {
-        document.body.classList.add("light-mode");
-        themeIcon?.classList.replace("fa-sun", "fa-moon");
-        if (themeText) themeText.textContent = "Dark Mode";
-    }
+    const applyTheme = (dark) => {
+        if (dark) {
+            document.body.classList.add("dark-mode");
+            if (themeIcon) {
+                themeIcon.className = "fa-solid fa-sun";
+            }
+            if (themeText) themeText.textContent = "Light Mode";
+        } else {
+            document.body.classList.remove("dark-mode");
+            if (themeIcon) {
+                themeIcon.className = "fa-solid fa-moon";
+            }
+            if (themeText) themeText.textContent = "Dark Mode";
+        }
+    };
+
+    // Apply initial theme (default light)
+    applyTheme(isDark);
 
     themeToggleBtn?.addEventListener("click", () => {
-        document.body.classList.toggle("light-mode");
-        const isLightMode = document.body.classList.contains("light-mode");
-
-        if (isLightMode) {
-            themeIcon?.classList.replace("fa-sun", "fa-moon");
-            if (themeText) themeText.textContent = "Dark Mode";
-            localStorage.setItem("theme", "light");
-        } else {
-            themeIcon?.classList.replace("fa-moon", "fa-sun");
-            if (themeText) themeText.textContent = "Light Mode";
-            localStorage.setItem("theme", "dark");
-        }
+        const currentlyDark = document.body.classList.contains("dark-mode");
+        const newDark = !currentlyDark;
+        applyTheme(newDark);
+        localStorage.setItem("theme", newDark ? "dark" : "light");
     });
 
     // ==========================================
@@ -359,18 +365,294 @@ document.addEventListener("DOMContentLoaded", () => {
     let responseTimesArray = [];
 
     function addMessage(text, isUser = false) {
+        if (chatWindow && chatWindow.classList.contains("hidden")) {
+            chatWindow.classList.remove("hidden");
+        }
+
         const msgDiv = document.createElement("div");
         msgDiv.className = `message ${isUser ? "user-message" : "ai-message"}`;
 
         const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-        msgDiv.innerHTML = isUser
-            ? `<div class="msg-content">${text}<span class="timestamp">${time}</span></div>`
-            : `<div class="avatar"><i class="fa-solid fa-robot"></i></div>
-               <div class="msg-content">${text}<span class="timestamp">${time}</span></div>`;
+        if (isUser) {
+            msgDiv.innerHTML = `<div class="msg-content">${text}<span class="timestamp">${time}</span></div>`;
+        } else {
+            msgDiv.innerHTML = `
+                <div class="avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div class="msg-content">
+                    <div class="msg-text-body">${text}</div>
+                    <div class="msg-footer">
+                        <button class="speak-btn" title="Read answer out loud">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                        <span class="timestamp">${time}</span>
+                    </div>
+                </div>`;
+
+            // Attach Text-to-Speech event to speaker button
+            const speakBtn = msgDiv.querySelector(".speak-btn");
+            speakBtn?.addEventListener("click", () => {
+                toggleSpeakMessage(text, speakBtn);
+            });
+        }
 
         chatWindow?.appendChild(msgDiv);
         if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    // ==========================================
+    // TEXT-TO-SPEECH (SPEAKER) ENGINE (ZERO-LATENCY)
+    // ==========================================
+    let currentSpeakingBtn = null;
+    let cachedVoices = [];
+
+    // Pre-cache voices immediately on start
+    function initVoices() {
+        if ('speechSynthesis' in window) {
+            cachedVoices = speechSynthesis.getVoices();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = () => {
+                    cachedVoices = speechSynthesis.getVoices();
+                };
+            }
+        }
+    }
+    initVoices();
+
+    // Helper to find the cleanest voice from cache instantly
+    function getBestVoiceForLanguage(langCode) {
+        const voices = cachedVoices.length > 0 ? cachedVoices : ('speechSynthesis' in window ? speechSynthesis.getVoices() : []);
+        if (!voices || voices.length === 0) return null;
+
+        if (langCode === "hi-IN") {
+            return voices.find(v => v.lang === "hi-IN" || v.lang === "hi_IN") ||
+                   voices.find(v => v.lang.startsWith("hi")) || null;
+        }
+
+        // Support specific regional language voices
+        const regionalMatch = voices.find(v => v.lang.toLowerCase().startsWith(langCode.toLowerCase().split('-')[0]));
+        if (regionalMatch && !langCode.startsWith("en")) {
+            return regionalMatch;
+        }
+
+        // For English: Prioritize Google US English, Microsoft Natural/Online voices
+        const englishVoices = voices.filter(v => v.lang.startsWith("en"));
+        const premiumKeywords = ["Natural", "Neural", "Google US English", "Google UK English", "Jenny", "Guy", "Aria", "Zira", "David"];
+
+        for (const kw of premiumKeywords) {
+            const matched = englishVoices.find(v => v.name.includes(kw));
+            if (matched) return matched;
+        }
+
+        return englishVoices.find(v => v.lang === "en-US") || englishVoices[0] || null;
+    }
+
+    function toggleSpeakMessage(rawText, btn) {
+        if (!('speechSynthesis' in window)) {
+            alert("Sorry, your browser does not support Speech Synthesis.");
+            return;
+        }
+
+        // ONE-TAP OFF: Instant stop
+        if (btn.classList.contains("speaking") || (currentSpeakingBtn === btn && speechSynthesis.speaking)) {
+            speechSynthesis.cancel();
+            resetSpeakBtn(btn);
+            currentSpeakingBtn = null;
+            return;
+        }
+
+        // ONE-TAP ON: Cancel any existing speech instantly
+        speechSynthesis.cancel();
+        if (currentSpeakingBtn) {
+            resetSpeakBtn(currentSpeakingBtn);
+            currentSpeakingBtn = null;
+        }
+
+        // Clean text fast
+        const cleanText = rawText
+            .replace(/```[\s\S]*?```/g, " ")
+            .replace(/`([^`]+)`/g, "$1")
+            .replace(/https?:\/\/\S+/g, "")
+            .replace(/\[\s*Page\s*\d+\s*\]/gi, "")
+            .replace(/📄\s*Sources?:?/gi, "")
+            .replace(/[*_#~>•\-—]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        if (!cleanText) return;
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+
+        // Detect language or read active preference
+        const activeLangOpt = document.querySelector(".lang-option.active");
+        const activeLang = activeLangOpt ? activeLangOpt.getAttribute("data-lang") : (localStorage.getItem("cortex_selected_lang") || "en");
+
+        const speechLangMap = {
+            en: "en-US",
+            hinglish: "hi-IN",
+            hi: "hi-IN",
+            bho: "hi-IN",
+            bn: "bn-IN",
+            mr: "mr-IN",
+            ta: "ta-IN",
+            es: "es-ES",
+            ru: "ru-RU",
+            zh: "zh-CN",
+            ja: "ja-JP"
+        };
+
+        let targetLangCode = speechLangMap[activeLang] || "en-US";
+        if (/[\u0900-\u097F]/.test(cleanText) && !["hi", "bho", "mr"].includes(activeLang)) targetLangCode = "hi-IN";
+        if (/[\u0980-\u09FF]/.test(cleanText)) targetLangCode = "bn-IN";
+        if (/[\u0B80-\u0BFF]/.test(cleanText)) targetLangCode = "ta-IN";
+        if (/[\u0400-\u04FF]/.test(cleanText)) targetLangCode = "ru-RU";
+        if (/[\u4E00-\u9FFF]/.test(cleanText)) targetLangCode = "zh-CN";
+        if (/[\u3040-\u309F\u30A0-\u30FF]/.test(cleanText)) targetLangCode = "ja-JP";
+
+        utterance.lang = targetLangCode;
+
+        // Assign voice from preloaded cache
+        const selectedVoice = getBestVoiceForLanguage(targetLangCode);
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        }
+
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+
+        // Visual State: Set immediately
+        btn.classList.add("speaking");
+        btn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i>`;
+        btn.title = "Tap to stop reading";
+        currentSpeakingBtn = btn;
+
+        utterance.onend = () => {
+            resetSpeakBtn(btn);
+            if (currentSpeakingBtn === btn) currentSpeakingBtn = null;
+        };
+
+        utterance.onerror = (e) => {
+            if (e.error !== 'interrupted' && e.error !== 'canceled') {
+                console.warn("TTS Error:", e);
+            }
+            resetSpeakBtn(btn);
+            if (currentSpeakingBtn === btn) currentSpeakingBtn = null;
+        };
+
+        // Resume engine if paused and trigger speech immediately
+        if (speechSynthesis.paused) {
+            speechSynthesis.resume();
+        }
+        speechSynthesis.speak(utterance);
+    }
+
+    function resetSpeakBtn(btn) {
+        if (!btn) return;
+        btn.classList.remove("speaking");
+        btn.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
+        btn.title = "Read answer out loud";
+    }
+
+    // Pre-load voices for browser support
+    if ('speechSynthesis' in window) {
+        speechSynthesis.onvoiceschanged = () => {
+            speechSynthesis.getVoices();
+        };
+    }
+
+    // ==========================================
+    // SPEECH-TO-TEXT (MICROPHONE VOICE INPUT)
+    // ==========================================
+    const micBtn = document.getElementById("mic-btn");
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isRecording = false;
+
+    if (SpeechRecognition && micBtn) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+
+        micBtn.addEventListener("click", () => {
+            if (isRecording) {
+                recognition.stop();
+                return;
+            }
+
+            // Sync with active language
+            const activeLangOpt = document.querySelector(".lang-option.active");
+            const activeLang = activeLangOpt ? activeLangOpt.getAttribute("data-lang") : (localStorage.getItem("cortex_selected_lang") || "en");
+
+            const sttMap = {
+                en: "en-US",
+                hinglish: "hi-IN",
+                hi: "hi-IN",
+                bho: "hi-IN",
+                bn: "bn-IN",
+                mr: "mr-IN",
+                ta: "ta-IN",
+                es: "es-ES",
+                ru: "ru-RU",
+                zh: "zh-CN",
+                ja: "ja-JP"
+            };
+
+            recognition.lang = sttMap[activeLang] || "en-US";
+
+            try {
+                recognition.start();
+            } catch (err) {
+                console.warn("Recognition already started:", err);
+            }
+        });
+
+        recognition.onstart = () => {
+            isRecording = true;
+            micBtn.classList.add("recording");
+            micBtn.innerHTML = `<i class="fa-solid fa-microphone-lines"></i>`;
+            micBtn.title = "Listening... Speak now (Tap to stop)";
+            if (chatInput) {
+                chatInput.placeholder = "Listening... Speak now...";
+            }
+        };
+
+        recognition.onresult = (event) => {
+            let transcript = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+            if (chatInput && transcript) {
+                chatInput.value = transcript;
+            }
+        };
+
+        recognition.onend = () => {
+            isRecording = false;
+            micBtn.classList.remove("recording");
+            micBtn.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
+            micBtn.title = "Voice Typing (Speech-to-Text)";
+            if (chatInput) {
+                chatInput.placeholder = "Ask questions about your uploaded documents or datasets...";
+                chatInput.focus();
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.warn("Speech Recognition Error:", event.error);
+            isRecording = false;
+            micBtn.classList.remove("recording");
+            micBtn.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
+            if (chatInput) {
+                chatInput.placeholder = "Ask questions about your uploaded documents or datasets...";
+            }
+            if (event.error === "not-allowed") {
+                alert("Microphone permission denied. Please allow microphone access in your browser settings.");
+            }
+        };
+    } else if (micBtn) {
+        micBtn.addEventListener("click", () => {
+            alert("Speech recognition is not supported in this browser. Please use Google Chrome, Edge, or Brave.");
+        });
     }
 
     // Function to animate the Bar Chart randomly for Chunk Distribution
@@ -419,6 +701,16 @@ document.addEventListener("DOMContentLoaded", () => {
         addMessage(text, true);
         chatInput.value = "";
 
+        if (typeof recordCurrentChatSession === "function") {
+            recordCurrentChatSession(text);
+        }
+
+        // Hide Hero Orb & Suggestion Cards when conversation starts
+        const orb = document.getElementById("orb-container");
+        const suggs = document.getElementById("suggestion-cards");
+        if (orb) orb.classList.add("hidden");
+        if (suggs) suggs.classList.add("hidden");
+
         // Reset RAG Pipeline UI
         const steps = document.querySelectorAll('.rag-step');
         steps.forEach(s => s.classList.remove('active'));
@@ -437,11 +729,42 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => { if (steps[2]) steps[2].classList.add('active'); }, 1000); // Chunk Retrieve
             setTimeout(() => { if (steps[3]) steps[3].classList.add('active'); }, 1500); // Similarity Match
 
-            // Call Backend
+            // Get currently active model from dropdown / localStorage
+            let currentModelId = "gemini";
+            try {
+                const activeOpt = document.querySelector(".model-option.active");
+                if (activeOpt) {
+                    currentModelId = activeOpt.getAttribute("data-model") || "gemini";
+                } else {
+                    const saved = localStorage.getItem("cortex_selected_model");
+                    if (saved) currentModelId = JSON.parse(saved).id || "gemini";
+                }
+            } catch (e) {
+                console.warn("Model resolve error:", e);
+            }
+
+            // Get currently active language
+            let currentLang = "en";
+            try {
+                const activeLangOpt = document.querySelector(".lang-option.active");
+                if (activeLangOpt) {
+                    currentLang = activeLangOpt.getAttribute("data-lang") || "en";
+                } else {
+                    currentLang = localStorage.getItem("cortex_selected_lang") || "en";
+                }
+            } catch (e) {
+                console.warn("Lang resolve error:", e);
+            }
+
+            // Call Backend with query, model, and language
             const response = await fetch("http://127.0.0.1:5000/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: text })
+                body: JSON.stringify({
+                    message: text,
+                    model: currentModelId,
+                    language: currentLang
+                })
             });
             const data = await response.json();
 
@@ -469,13 +792,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 confInner.textContent = `${confScore}%`;
             }
 
-            // Format Answer
-            let answer = data.answer || "No response found";
-            // if (data.sources && data.sources.length) {
-            //     answer += `<br><br>📄 Sources: ${data.sources.join(", ")}`;
-            // }
+            // Format Answer or error
+            if (data.error) {
+                addMessage(`⚠️ ${data.error}`);
+            } else {
+                let answer = data.answer || "No response found";
+                addMessage(answer);
+            }
 
-            addMessage(answer);
+            // Directly record chat session for Library History
+            if (typeof recordCurrentChatSession === "function") {
+                recordCurrentChatSession(text);
+            }
 
         } catch (error) {
             const aiMessages = document.querySelectorAll(".ai-message");
@@ -495,13 +823,42 @@ document.addEventListener("DOMContentLoaded", () => {
     // 4. CLEAR CHAT
     // ==========================================
     window.clearChat = () => {
-        if (chatWindow) chatWindow.innerHTML = "";
-        addMessage("🤖 Systems online. Ask me anything about your document.");
+        if (chatWindow) {
+            chatWindow.innerHTML = "";
+            chatWindow.classList.add("hidden");
+        }
+
+        // Re-show hero orb and suggestions
+        const orb = document.getElementById("orb-container");
+        const suggs = document.getElementById("suggestion-cards");
+        if (orb) orb.classList.remove("hidden");
+        if (suggs) suggs.classList.remove("hidden");
 
         // Clear pipeline UI
         document.querySelectorAll('.rag-step').forEach(s => s.classList.remove('active'));
         if (retrievalResults) retrievalResults.classList.add('hidden');
     };
+
+    // Quick suggestion cards handler
+    window.triggerSuggestion = (text) => {
+        if (chatInput) {
+            chatInput.value = text;
+            handleSend();
+        }
+    };
+
+    // Right Panel Toggle
+    const panelToggleBtn = document.getElementById("panel-toggle-btn");
+    const closePanelBtn = document.getElementById("close-panel-btn");
+    const rightPanel = document.getElementById("right-panel");
+
+    panelToggleBtn?.addEventListener("click", () => {
+        rightPanel?.classList.toggle("collapsed");
+    });
+
+    closePanelBtn?.addEventListener("click", () => {
+        rightPanel?.classList.add("collapsed");
+    });
 
     // ==========================================
     // 5. EXPORT CHAT LOGIC
@@ -544,6 +901,158 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ==========================================
+    // 5.5 SHARE LINK LOGIC
+    // ==========================================
+    const shareLinkBtn = document.getElementById("share-link-btn");
+    shareLinkBtn?.addEventListener("click", async () => {
+        const currentUrl = window.location.href;
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(currentUrl);
+            } else {
+                // Fallback for non-https or older browser context
+                const tempInput = document.createElement("input");
+                tempInput.value = currentUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand("copy");
+                document.body.removeChild(tempInput);
+            }
+            showToast("🔗 Link copied to clipboard!");
+        } catch (err) {
+            console.error("Clipboard copy error:", err);
+            prompt("Copy this link:", currentUrl);
+        }
+    });
+
+    // Toast Notification helper
+    function showToast(message) {
+        let toast = document.getElementById("cortex-toast");
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "cortex-toast";
+            toast.className = "cortex-toast";
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = `<i class="fa-solid fa-check-circle"></i> <span>${message}</span>`;
+        toast.classList.add("show");
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => {
+            toast.classList.remove("show");
+        }, 2500);
+    }
+    window.showToast = showToast;
+
+    // ==========================================
+    // 5.6 SIDEBAR COLLAPSE / EXPAND LOGIC
+    // ==========================================
+    const cortexApp = document.querySelector(".cortex-app");
+    const sidebarCollapseBtn = document.getElementById("sidebar-collapse-btn");
+    const sidebarExpandBtn = document.getElementById("sidebar-expand-btn");
+
+    function toggleSidebar(collapsed) {
+        if (!cortexApp) return;
+        const isCollapsed = collapsed !== undefined ? collapsed : !cortexApp.classList.contains("sidebar-collapsed");
+        cortexApp.classList.toggle("sidebar-collapsed", isCollapsed);
+
+        if (sidebarExpandBtn) {
+            sidebarExpandBtn.classList.toggle("hidden", !isCollapsed);
+        }
+
+        // Save preference in localStorage
+        localStorage.setItem("cortex_sidebar_collapsed", isCollapsed ? "true" : "false");
+    }
+
+    sidebarCollapseBtn?.addEventListener("click", () => toggleSidebar(true));
+    sidebarExpandBtn?.addEventListener("click", () => toggleSidebar(false));
+
+    // Restore saved sidebar preference
+    if (localStorage.getItem("cortex_sidebar_collapsed") === "true") {
+        toggleSidebar(true);
+    }
+
+    // ==========================================
+    // 5.7 LANGUAGE SELECTOR POPUP LOGIC
+    // ==========================================
+    const langBtn = document.getElementById("lang-btn");
+    const langPopup = document.getElementById("lang-popup");
+    const langOptions = document.querySelectorAll(".lang-option");
+
+    langBtn?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = langPopup?.classList.toggle("show");
+        langBtn.classList.toggle("active", isOpen);
+    });
+
+    langOptions.forEach(opt => {
+        opt.addEventListener("click", () => {
+            const selectedLang = opt.getAttribute("data-lang");
+            langOptions.forEach(o => o.classList.remove("active"));
+            opt.classList.add("active");
+
+            localStorage.setItem("cortex_selected_lang", selectedLang);
+            langPopup?.classList.remove("show");
+            langBtn?.classList.remove("active");
+
+            const labelMap = {
+                en: "English",
+                hinglish: "Hinglish",
+                hi: "हिंदी (Hindi)",
+                bho: "भोजपुरी (Bhojpuri)",
+                bn: "বাংলা (Bengali)",
+                mr: "मराठी (Marathi)",
+                ta: "தமிழ் (Tamil)",
+                es: "Español (Spanish)",
+                ru: "Русский (Russian)",
+                zh: "中文 (Chinese)",
+                ja: "日本語 (Japanese)"
+            };
+            showToast(`🌐 Output language set to ${labelMap[selectedLang] || selectedLang}`);
+        });
+    });
+
+    // Restore saved language preference
+    const savedLang = localStorage.getItem("cortex_selected_lang");
+    if (savedLang) {
+        langOptions.forEach(opt => {
+            if (opt.getAttribute("data-lang") === savedLang) {
+                opt.classList.add("active");
+            } else {
+                opt.classList.remove("active");
+            }
+        });
+    }
+
+    // ==========================================
+    // 5.8 HELP & DOCUMENTATION MODAL LOGIC
+    // ==========================================
+    const helpBtn = document.getElementById("help-btn");
+    const helpModal = document.getElementById("help-modal");
+    const closeHelpBtn = document.getElementById("close-help-btn");
+
+    helpBtn?.addEventListener("click", () => {
+        helpModal?.classList.remove("hidden");
+    });
+
+    closeHelpBtn?.addEventListener("click", () => {
+        helpModal?.classList.add("hidden");
+    });
+
+    helpModal?.addEventListener("click", (e) => {
+        if (e.target === helpModal) {
+            helpModal.classList.add("hidden");
+        }
+    });
+
+    // Close any popup on outside click
+    document.addEventListener("click", (e) => {
+        if (langPopup && !langPopup.contains(e.target) && !langBtn?.contains(e.target)) {
+            langPopup.classList.remove("show");
+            langBtn?.classList.remove("active");
+        }
+    });
+
+    // ==========================================
     // 6. REBUILD VECTOR DB LOGIC
     // ==========================================
     const rebuildBtn = document.getElementById("rebuild-btn");
@@ -555,10 +1064,8 @@ document.addEventListener("DOMContentLoaded", () => {
         addMessage("⚙️ Sending request to wipe and rebuild Vector Database. Please wait...", false);
 
         try {
-            // Simulated 2-second delay for the backend process
             await new Promise(r => setTimeout(r, 2000));
 
-            // Reset UI Document Details
             const docFile = document.getElementById("doc-file") || document.querySelector('.doc-status .highlight');
             if (docFile) docFile.textContent = "NA";
 
@@ -568,20 +1075,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const docChunks = document.getElementById("doc-chunks");
             if (docChunks) docChunks.textContent = "NA";
 
-            const docModel = document.getElementById("doc-model");
-            if (docModel) docModel.textContent = "NA";
-
-            // Reset UI Status Dots
-            const vectorDot = document.getElementById("vector-dot");
-            const retrieverDot = document.getElementById("retriever-dot");
-            if (vectorDot) vectorDot.className = "dot";
-            if (retrieverDot) retrieverDot.className = "dot";
-
-            const vectorStatus = document.getElementById("vector-status");
-            const retrieverStatus = document.getElementById("retriever-status");
-            if (vectorStatus) vectorStatus.textContent = "Not Connected";
-            if (retrieverStatus) retrieverStatus.textContent = "Inactive";
-
             addMessage("✅ Vector DB successfully wiped. Memory cleared. Please upload a new document to start RAG.", false);
 
         } catch (error) {
@@ -589,5 +1082,363 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error(error);
         }
     });
+
+    // ==========================================
+    // 7. LIBRARY & CHAT SESSIONS HISTORY
+    // ==========================================
+    const libraryCountEl = document.getElementById("library-count");
+    const historyListEl = document.getElementById("history-items-list");
+    const searchChatInput = document.getElementById("search-chat-input");
+    const navLibraryBtn = document.getElementById("nav-library");
+    const navExploreBtn = document.getElementById("nav-explore");
+
+    // Load saved chats from localStorage
+    const getSavedSessions = () => {
+        try {
+            return JSON.parse(localStorage.getItem("cortex_saved_chats")) || [];
+        } catch (e) {
+            return [];
+        }
+    };
+
+    const saveSessions = (sessions) => {
+        try {
+            localStorage.setItem("cortex_saved_chats", JSON.stringify(sessions));
+        } catch (e) {
+            console.error("Storage limit reached:", e);
+        }
+    };
+
+    // Current active chat session ID
+    let currentSessionId = Date.now().toString();
+
+    const updateLibraryCount = () => {
+        const sessions = getSavedSessions();
+        if (libraryCountEl) libraryCountEl.textContent = sessions.length;
+    };
+
+    // Render list of previous chats in the sidebar
+    const renderChatHistoryList = (filterQuery = "") => {
+        if (!historyListEl) return;
+        const sessions = getSavedSessions();
+
+        const filtered = sessions.filter(s => 
+            s.title.toLowerCase().includes(filterQuery.toLowerCase())
+        );
+
+        if (filtered.length === 0) {
+            historyListEl.innerHTML = `<div class="history-empty-text">${sessions.length === 0 ? "No previous chats yet." : "No matches found."}</div>`;
+            return;
+        }
+
+        historyListEl.innerHTML = "";
+        filtered.forEach(session => {
+            const item = document.createElement("div");
+            item.className = `history-item ${session.id === currentSessionId ? "active" : ""}`;
+            item.title = `${session.title} (${session.date})`;
+
+            item.innerHTML = `
+                <span class="history-item-title">${session.title}</span>
+                <button class="history-delete-btn" title="Delete chat"><i class="fa-solid fa-trash-can"></i></button>
+            `;
+
+            // Click to load chat session
+            item.addEventListener("click", (e) => {
+                if (e.target.closest(".history-delete-btn")) return;
+                loadChatSession(session.id);
+            });
+
+            // Click to delete chat session
+            const delBtn = item.querySelector(".history-delete-btn");
+            delBtn?.addEventListener("click", (e) => {
+                e.stopPropagation();
+                deleteChatSession(session.id);
+            });
+
+            historyListEl.appendChild(item);
+        });
+    };
+
+    // Save current conversation state to storage
+    const recordCurrentChatSession = (firstUserPrompt) => {
+        const sessions = getSavedSessions();
+        let session = sessions.find(s => s.id === currentSessionId);
+
+        if (!session) {
+            // Create new session
+            const cleanTitle = firstUserPrompt.length > 32 
+                ? firstUserPrompt.substring(0, 32) + "..." 
+                : firstUserPrompt;
+
+            session = {
+                id: currentSessionId,
+                title: cleanTitle,
+                html: chatWindow ? chatWindow.innerHTML : "",
+                date: new Date().toLocaleDateString([], { month: "short", day: "numeric" }),
+                timestamp: Date.now()
+            };
+            sessions.unshift(session);
+        } else {
+            // Update existing session content
+            session.html = chatWindow ? chatWindow.innerHTML : "";
+            session.timestamp = Date.now();
+        }
+
+        saveSessions(sessions);
+        updateLibraryCount();
+        renderChatHistoryList(searchChatInput?.value || "");
+    };
+
+    // Load and restore a previous chat
+    const loadChatSession = (sessionId) => {
+        const sessions = getSavedSessions();
+        const session = sessions.find(s => s.id === sessionId);
+        if (!session || !chatWindow) return;
+
+        currentSessionId = session.id;
+        chatWindow.innerHTML = session.html;
+        chatWindow.classList.remove("hidden");
+
+        // Re-bind speaker buttons in restored chat
+        chatWindow.querySelectorAll(".ai-message").forEach(aiMsg => {
+            const speakBtn = aiMsg.querySelector(".speak-btn");
+            const textNode = aiMsg.querySelector(".msg-text-body") || aiMsg.querySelector(".msg-content");
+            if (speakBtn && textNode) {
+                speakBtn.onclick = () => toggleSpeakMessage(textNode.innerText, speakBtn);
+            }
+        });
+
+        // Hide Hero Orb & Suggestion Cards when viewing conversation
+        const orb = document.getElementById("orb-container");
+        const suggs = document.getElementById("suggestion-cards");
+        if (orb) orb.classList.add("hidden");
+        if (suggs) suggs.classList.add("hidden");
+
+        renderChatHistoryList(searchChatInput?.value || "");
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    };
+
+    // Delete a chat session
+    const deleteChatSession = (sessionId) => {
+        let sessions = getSavedSessions();
+        sessions = sessions.filter(s => s.id !== sessionId);
+        saveSessions(sessions);
+        updateLibraryCount();
+
+        if (currentSessionId === sessionId) {
+            window.clearChat();
+        } else {
+            renderChatHistoryList(searchChatInput?.value || "");
+        }
+    };
+
+    // Live search filter on previous chats
+    searchChatInput?.addEventListener("input", (e) => {
+        renderChatHistoryList(e.target.value.trim());
+    });
+
+    // Library Modal Elements
+    const libraryModal = document.getElementById("library-modal");
+    const closeLibraryBtn = document.getElementById("close-library-btn");
+    const libraryModalList = document.getElementById("library-modal-list");
+    const libraryModalSearch = document.getElementById("library-modal-search");
+    const libraryModalCount = document.getElementById("library-modal-count");
+    const clearAllHistoryBtn = document.getElementById("clear-all-history-btn");
+
+    function renderLibraryModalList(query = "") {
+        if (!libraryModalList) return;
+        const sessions = getSavedSessions();
+        if (libraryModalCount) {
+            libraryModalCount.textContent = `${sessions.length} chat${sessions.length === 1 ? '' : 's'}`;
+        }
+
+        const filtered = sessions.filter(s => s.title.toLowerCase().includes(query.toLowerCase()));
+
+        if (filtered.length === 0) {
+            libraryModalList.innerHTML = `
+                <div style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: 0.85rem;">
+                    <i class="fa-regular fa-folder-open" style="font-size: 2rem; margin-bottom: 0.5rem; display: block; opacity: 0.5;"></i>
+                    ${sessions.length === 0 ? "No saved conversations yet. Ask questions to save chats!" : "No matching chats found."}
+                </div>`;
+            return;
+        }
+
+        libraryModalList.innerHTML = "";
+        filtered.forEach(session => {
+            const card = document.createElement("div");
+            card.className = `library-card-item ${session.id === currentSessionId ? 'active' : ''}`;
+            card.innerHTML = `
+                <div class="library-card-left">
+                    <div class="library-card-icon"><i class="fa-regular fa-message"></i></div>
+                    <div class="library-card-info">
+                        <div class="library-card-title">${session.title}</div>
+                        <div class="library-card-meta">${session.date || "Recent"}</div>
+                    </div>
+                </div>
+                <div class="library-card-actions">
+                    <button class="library-del-btn" title="Delete conversation">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+
+            // Click to load chat session
+            card.addEventListener("click", (e) => {
+                if (e.target.closest(".library-del-btn")) return;
+                loadChatSession(session.id);
+                libraryModal?.classList.add("hidden");
+                showToast(`📂 Restored: "${session.title}"`);
+            });
+
+            // Delete single session
+            const delBtn = card.querySelector(".library-del-btn");
+            delBtn?.addEventListener("click", (e) => {
+                e.stopPropagation();
+                deleteChatSession(session.id);
+                renderLibraryModalList(libraryModalSearch?.value || "");
+            });
+
+            libraryModalList.appendChild(card);
+        });
+    }
+
+    // Library button click opens modal
+    navLibraryBtn?.addEventListener("click", (e) => {
+        e.preventDefault();
+        renderLibraryModalList("");
+        if (libraryModalSearch) libraryModalSearch.value = "";
+        libraryModal?.classList.remove("hidden");
+    });
+
+    closeLibraryBtn?.addEventListener("click", () => {
+        libraryModal?.classList.add("hidden");
+    });
+
+    libraryModal?.addEventListener("click", (e) => {
+        if (e.target === libraryModal) {
+            libraryModal.classList.add("hidden");
+        }
+    });
+
+    libraryModalSearch?.addEventListener("input", (e) => {
+        renderLibraryModalList(e.target.value.trim());
+    });
+
+    clearAllHistoryBtn?.addEventListener("click", () => {
+        const sessions = getSavedSessions();
+        if (sessions.length === 0) return;
+        if (confirm("Are you sure you want to delete all saved conversations?")) {
+            saveSessions([]);
+            updateLibraryCount();
+            renderChatHistoryList();
+            renderLibraryModalList("");
+            window.clearChat();
+            showToast("🗑️ All chat history cleared");
+        }
+    });
+
+    // Hook auto-save into handleSend
+    const originalHandleSend = handleSend;
+    // Auto-save session on message delivery
+    const autoSaveWatcher = new MutationObserver(() => {
+        const userMsgs = chatWindow?.querySelectorAll(".user-message");
+        if (userMsgs && userMsgs.length > 0) {
+            const firstUserText = userMsgs[0].querySelector(".msg-content")?.innerText?.split("\n")[0] || "Chat Session";
+            recordCurrentChatSession(firstUserText);
+        }
+    });
+
+    if (chatWindow) {
+        autoSaveWatcher.observe(chatWindow, { childList: true, subtree: true });
+    }
+
+    // Reset session ID on New Chat
+    const originalClearChat = window.clearChat;
+    window.clearChat = () => {
+        originalClearChat();
+        currentSessionId = Date.now().toString();
+        renderChatHistoryList(searchChatInput?.value || "");
+    };
+
+    // Initial render on load
+    updateLibraryCount();
+    renderChatHistoryList();
+
+    // ==========================================
+    // 8. MODEL SELECTOR DROPDOWN LOGIC
+    // ==========================================
+    const modelSelectorBtn = document.getElementById("model-selector-btn");
+    const modelDropdownMenu = document.getElementById("model-dropdown-menu");
+    const selectedModelName = document.getElementById("selected-model-name");
+    const selectedModelIcon = document.getElementById("selected-model-icon");
+    const modelOptions = document.querySelectorAll(".model-option");
+
+    if (modelSelectorBtn && modelDropdownMenu) {
+        // Toggle dropdown
+        modelSelectorBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isOpen = modelDropdownMenu.classList.toggle("show");
+            modelSelectorBtn.classList.toggle("open", isOpen);
+            modelSelectorBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+
+        // Close dropdown when clicking anywhere outside
+        document.addEventListener("click", (e) => {
+            if (!modelSelectorBtn.contains(e.target) && !modelDropdownMenu.contains(e.target)) {
+                modelDropdownMenu.classList.remove("show");
+                modelSelectorBtn.classList.remove("open");
+                modelSelectorBtn.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        // Handle option click
+        modelOptions.forEach(opt => {
+            opt.addEventListener("click", () => {
+                const modelId = opt.getAttribute("data-model");
+                const modelName = opt.getAttribute("data-name");
+                const modelIcon = opt.getAttribute("data-icon");
+
+                modelOptions.forEach(o => o.classList.remove("active"));
+                opt.classList.add("active");
+
+                if (selectedModelName) selectedModelName.innerText = modelName;
+                if (selectedModelIcon && modelIcon) {
+                    selectedModelIcon.className = modelIcon;
+                }
+
+                // Save to localStorage
+                localStorage.setItem("cortex_selected_model", JSON.stringify({
+                    id: modelId,
+                    name: modelName,
+                    icon: modelIcon
+                }));
+
+                // Close dropdown
+                modelDropdownMenu.classList.remove("show");
+                modelSelectorBtn.classList.remove("open");
+                modelSelectorBtn.setAttribute("aria-expanded", "false");
+            });
+        });
+
+        // Restore saved model on load
+        try {
+            const saved = localStorage.getItem("cortex_selected_model");
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed.name && selectedModelName) selectedModelName.innerText = parsed.name;
+                if (parsed.icon && selectedModelIcon) selectedModelIcon.className = parsed.icon;
+
+                modelOptions.forEach(opt => {
+                    if (opt.getAttribute("data-model") === parsed.id) {
+                        opt.classList.add("active");
+                    } else {
+                        opt.classList.remove("active");
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn("Could not restore saved model preference:", e);
+        }
+    }
 
 });
